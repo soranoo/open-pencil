@@ -1,5 +1,5 @@
 import { createEnv } from "@t3-oss/env-core";
-import * as z from "zod";
+import z from "zod";
 
 import type { AIProviderID } from "@open-pencil/core";
 
@@ -44,6 +44,7 @@ export const env = createEnv({
     SESSION_TTL_MINUTES: z.coerce.number().min(1).default(30),
 
     CORS_ORIGIN: z.union([z.url(), z.array(z.url())]).default("http://localhost:1420"),
+    ENABLE_OPENAPI_DOCS: z.coerce.boolean().default(false),
   },
 
   /**
