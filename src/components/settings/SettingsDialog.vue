@@ -17,6 +17,7 @@ import { provideProviderSettings } from '@/components/settings/provider/context'
 import ProviderSelectField from '@/components/settings/provider-select/ProviderSelectField.vue'
 import AppSwitch from '@/components/ui/AppSwitch.vue'
 import { AppDialogFooter, AppDialogHeader, AppDialogRoot } from '@/components/ui/dialog'
+import { IS_DISABLE_AI_CHAT } from '@/constants'
 
 const { dialogs } = useI18n()
 const { browserCredentialsRemembered, setRememberCredentials } = useAIChat()
@@ -68,6 +69,7 @@ const navigationClass =
     <div class="flex min-h-0 flex-1">
       <nav class="w-40 shrink-0 border-r border-border p-2" :aria-label="dialogs.settings">
         <button
+          v-if="!IS_DISABLE_AI_CHAT"
           type="button"
           :class="navigationClass"
           :data-state="settingsDialogSection === 'ai' ? 'active' : 'inactive'"
@@ -91,7 +93,7 @@ const navigationClass =
 
       <div class="min-h-0 flex-1 overflow-y-auto p-4">
         <section
-          v-if="settingsDialogSection === 'ai'"
+          v-if="settingsDialogSection === 'ai' && !IS_DISABLE_AI_CHAT"
           class="flex flex-col gap-2.5"
           data-test-id="settings-ai-panel"
         >

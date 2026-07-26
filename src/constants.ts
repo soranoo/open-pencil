@@ -72,6 +72,8 @@ export const WEB_APP_ORIGIN = 'https://app.openpencil.dev'
 export const IS_BACKEND_MODE = import.meta.env.VITE_IS_BACKEND_MODE === 'true'
 export const IS_DISABLE_TAB = import.meta.env.VITE_DISABLE_TAB === 'true'
 export const IS_DISABLE_COLLABORATION = import.meta.env.VITE_DISABLE_COLLABORATION === 'true'
+export const IS_DISABLE_UI_CODE_TAB = import.meta.env.VITE_DISABLE_UI_CODE_TAB === 'true'
+export const IS_DISABLE_AI_CHAT = import.meta.env.VITE_DISABLE_AI_CHAT === 'true'
 
 export function getShareUrl(roomId: string): string {
   const base = IS_TAURI || !IS_BROWSER ? WEB_APP_ORIGIN : window.location.origin

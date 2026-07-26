@@ -12,14 +12,21 @@ interface ImportMetaEnv {
 
   /**
    * Backend mode toggle. Set to 'true' to use backend-only save flow.
-  */
- readonly VITE_IS_BACKEND_MODE?: 'true' | 'false'
-  
- // Feature Flags
- // TODO: fully disable tab features (now UI and limit tab creation only)
- readonly VITE_DISABLE_TAB?: 'true' | 'false'
- // TODO: fully disable collaboration features (now UI only)
- readonly VITE_DISABLE_COLLABORATION?: 'true' | 'false'
+   */
+  readonly VITE_IS_BACKEND_MODE?: 'true' | 'false'
+
+  // Feature Flags
+  // TODO: fully disable tab features (now UI and limit tab creation only)
+  readonly VITE_DISABLE_TAB?: 'true' | 'false'
+  // TODO: fully disable collaboration features (now UI and useCollab only)
+  readonly VITE_DISABLE_COLLABORATION?: 'true' | 'false'
+  readonly VITE_DISABLE_UI_CODE_TAB?: 'true' | 'false'
+
+  /**
+   * Disables client-side AI chat features.
+   */
+  // TODO: fully disable AI chat features (now UI only)
+  readonly VITE_DISABLE_AI_CHAT?: 'true' | 'false'
 }
 
 interface ImportMeta {
