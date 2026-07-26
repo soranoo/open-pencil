@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 import type { EditorState } from '@open-pencil/core/editor'
 
 import { downloadBlob } from '@/app/document/io/browser'
@@ -23,6 +25,8 @@ type SaveActionsOptions = {
   setLastWriteTime: (time: number) => void
   startWatchingFile: () => void
 }
+
+export const isSaving = ref<boolean>(false)
 
 export function createSaveActions({
   state,
@@ -61,32 +65,35 @@ export function createSaveActions({
   }
 
   async function saveFigFile() {
+    isSaving.value = true
     if (IS_BACKEND_MODE) {
       const versionToSave = state.sceneVersion
       const saved = await saveToBackend(true)
-      if (!saved) throw new Error('Backend mode requires openPencilServer save bridge to be available')
+      if (!saved)
+        throw new Error('Backend mode requires openPencilServer save bridge to be available')
       setSavedVersion(versionToSave)
-      return
-    }
-
-    const filePath = getFilePath()
-    const fileHandle = getFileHandle()
-    const downloadName = getDownloadName()
-    if (filePath || fileHandle) {
-      const wrote = await writeFile(await buildFigFile())
-      if (wrote) setSourceIdentity({ handle: fileHandle, path: filePath })
-    } else if (downloadName) {
-      downloadBlob(new Uint8Array(await buildFigFile()), downloadName, 'application/octet-stream')
     } else {
-      await saveFigFileAs()
+      const filePath = getFilePath()
+      const fileHandle = getFileHandle()
+      const downloadName = getDownloadName()
+      if (filePath || fileHandle) {
+        const wrote = await writeFile(await buildFigFile())
+        if (wrote) setSourceIdentity({ handle: fileHandle, path: filePath })
+      } else if (downloadName) {
+        downloadBlob(new Uint8Array(await buildFigFile()), downloadName, 'application/octet-stream')
+      } else {
+        await saveFigFileAs()
+      }
     }
+    isSaving.value = false
   }
 
   async function saveFigFileAs() {
     if (IS_BACKEND_MODE) {
       const versionToSave = state.sceneVersion
       const saved = await saveToBackend(false)
-      if (!saved) throw new Error('Backend mode requires openPencilServer save bridge to be available')
+      if (!saved)
+        throw new Error('Backend mode requires openPencilServer save bridge to be available')
       setSavedVersion(versionToSave)
       return
     }
