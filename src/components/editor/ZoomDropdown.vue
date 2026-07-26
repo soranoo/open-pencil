@@ -14,6 +14,7 @@ import AppShortcutText from '@/components/ui/AppShortcutText.vue'
 import { menuItem, useMenuUI } from '@/components/ui/menu'
 import { useEditorStore } from '@/app/editor/active-store'
 import { appMenuShortcut, appMenuShortcutLabel } from '@/app/shell/menu/shortcut'
+import { IS_DISABLE_COLLABORATION } from '@/constants'
 
 const store = useEditorStore()
 const { getCommand } = useEditorCommands()
@@ -157,7 +158,7 @@ watch(open, (v) => {
           <icon-lucide-check v-if="store.state.showRulers" class="absolute left-2 size-3.5" />
           <span class="flex-1">{{ panels.rulers }}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem :class="itemCls" @select.prevent="toggleRemoteCursors">
+        <DropdownMenuItem v-if="!IS_DISABLE_COLLABORATION" :class="itemCls" @select.prevent="toggleRemoteCursors">
           <icon-lucide-check
             v-if="store.state.showRemoteCursors"
             class="absolute left-2 size-3.5"

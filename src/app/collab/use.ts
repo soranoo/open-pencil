@@ -11,12 +11,35 @@ import {
 import { DEFAULT_COLLAB_STATE, type CollabState, type RemotePeer } from '@/app/collab/types'
 import { createYjsGraphSync } from '@/app/collab/yjs-sync'
 import type { EditorStore } from '@/app/editor/active-store'
+import { IS_DISABLE_COLLABORATION } from '@/constants'
 
 export { COLLAB_KEY, useCollabInjected } from '@/app/collab/context'
 export { DEFAULT_COLLAB_STATE }
 export type { CollabState, RemotePeer }
 
+/**
+ * A stub implementation of the collaboration API that does nothing,
+ * for when collaboration is disabled.
+ */
+const collabStub = {
+  state: { value: { roomId: null, localName: '' } },
+  remotePeers: computed(() => []),
+  followingPeer: computed(() => null),
+  connect: () => Promise.resolve(),
+  disconnect: () => {},
+  shareCurrentDoc: () => '', // noop: returns empty id
+  updateCursor: () => {},
+  updateSelection: () => {},
+  setLocalName: () => {},
+  followPeer: () => {},
+  tickFollow: () => {}
+}
+
 export function useCollab(storeOrGetter: EditorStore | (() => EditorStore)) {
+  if (IS_DISABLE_COLLABORATION) {
+    return collabStub
+  }
+
   const getStore = () =>
     typeof storeOrGetter === 'function' ? (storeOrGetter as () => EditorStore)() : storeOrGetter
   const storedName = useLocalStorage('op-collab-name', '')
