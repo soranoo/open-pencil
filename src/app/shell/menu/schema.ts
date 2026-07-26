@@ -1,3 +1,4 @@
+import { IS_BACKEND_MODE } from '@/constants'
 import type { EditorCommandId } from '@open-pencil/vue'
 
 export type AppMenuTarget = 'all' | 'browser' | 'native'
@@ -30,7 +31,7 @@ export const APP_MENU_SCHEMA = [
   {
     label: 'File',
     items: [
-      ...(import.meta.env.VITE_IS_BACKEND_MODE == 'true'
+      ...(IS_BACKEND_MODE
         ? [{ id: 'save', label: 'Save', shortcut: 'MOD+S' }]
         : ([
             { id: 'new', label: 'New', shortcut: 'MOD+N' },
@@ -51,7 +52,7 @@ export const APP_MENU_SCHEMA = [
             }
           ] satisfies AppMenuEntry[])),
       { type: 'separator' },
-      ...(import.meta.env.VITE_IS_BACKEND_MODE == 'true'
+      ...(IS_BACKEND_MODE
         ? []
         : [
           { id: 'autosave', label: 'Autosave', checkbox: true },

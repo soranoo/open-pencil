@@ -12,6 +12,7 @@ import { createEditorStore } from '@/app/editor/session'
 import type { EditorStore } from '@/app/editor/session'
 import { createFileOpenCoordinator } from '@/app/tabs/open/coordinator'
 import { findTabByFileIdentity } from '@/app/tabs/open/identity'
+import { IS_BACKEND_MODE, IS_DISABLE_TAB } from '@/constants'
 
 export interface Tab {
   id: string
@@ -63,6 +64,10 @@ export function getTabsSnapshot(): Tab[] {
 }
 
 export function createTab(store?: EditorStore, initialGraph?: SceneGraph): Tab {
+  if (IS_DISABLE_TAB && tabsRef.value.length > 0) {
+    throw new Error('Tab creation is disabled. Only one tab is allowed.')
+  }
+
   const s = store ?? createEditorStore(initialGraph)
   const tab: Tab = { id: generateTabId(), store: s }
   tabsRef.value = [...tabsRef.value, tab]

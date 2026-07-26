@@ -9,7 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_OPENPENCIL_SERVER_URL: string
   readonly VITE_OPENPENCIL_AUTOSAVE: 'true' | 'false'
   readonly VITE_OPENPENCIL_SERVER_SAVE_DEBOUNCE_MS: string
-  readonly IS_BACKEND_MODE: 'true' | 'false'
+  readonly VITE_DISABLE_TAB: 'true' | 'false'
 
   /**
    * Backend mode toggle. Set to 'true' to use backend-only save flow.
