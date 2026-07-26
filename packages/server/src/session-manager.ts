@@ -5,9 +5,9 @@
 import { randomUUID } from 'node:crypto'
 import type { ModelMessage } from 'ai'
 
-import type { DocumentHandle } from './document.js'
-import { createBlankDocument } from './document.js'
-import { env } from './env.js'
+import type { DocumentHandle } from '@/document.js'
+import { createBlankDocument } from '@/document.js'
+import { env } from '@/env'
 
 export interface Session {
   id: string
@@ -55,7 +55,7 @@ export function deleteSession(id: string): void {
 
 /** Drop sessions that went idle past the TTL and were never explicitly saved. */
 function sweepExpiredSessions(): void {
-  const ttlMs = env.sessionTTLMinutes * 60_000
+  const ttlMs = env.SESSION_TTL_MINUTES * 60_000
   const now = Date.now()
   for (const [id, session] of sessions) {
     const idleMs = now - session.lastActiveAt

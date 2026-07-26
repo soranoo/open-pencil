@@ -1,9 +1,9 @@
 import { Pool } from 'pg'
 import type { ModelMessage } from 'ai'
 
-import { env } from '../env.js'
+import { env } from '@/env'
 
-const pool = new Pool({ connectionString: env.databaseUrl })
+const pool = new Pool({ connectionString: env.DATABASE_URL })
 
 export interface DesignMetadata {
   id: string

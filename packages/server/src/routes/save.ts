@@ -1,9 +1,9 @@
 import type { Context } from 'hono'
 
-import { serializeDocument } from '../document.js'
-import { markSaved, getSession } from '../session-manager.js'
-import { putDesignBytes } from '../storage/s3.js'
-import { upsertDesignMetadata } from '../storage/metadata.js'
+import { serializeDocument } from '@/document.js'
+import { markSaved, getSession } from '@/session-manager.js'
+import { putDesignBytes } from '@/storage/s3.js'
+import { upsertDesignMetadata } from '@/storage/metadata.js'
 
 export async function saveRoute(c: Context) {
   const uuid = c.req.param('uuid')

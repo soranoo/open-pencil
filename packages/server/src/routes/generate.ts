@@ -1,10 +1,10 @@
 import type { Context } from 'hono'
 
-import { runPrompt } from '../chat-engine.js'
-import { loadDocument } from '../document.js'
-import { env } from '../env.js'
-import { getDesignBytes } from '../storage/s3.js'
-import { createSession, getSession } from '../session-manager.js'
+import { runPrompt } from '@/chat-engine.js'
+import { loadDocument } from '@/document.js'
+import { env } from '@/env'
+import { getDesignBytes } from '@/storage/s3.js'
+import { createSession, getSession } from '@/session-manager.js'
 
 interface GenerateBody {
   prompt: string
@@ -35,12 +35,12 @@ export async function generateRoute(c: Context) {
   const result = await runPrompt(
     session.doc,
     {
-      providerID: env.ai.providerID as never,
-      apiKey: env.ai.apiKey,
-      modelID: env.ai.modelID,
-      customModelID: env.ai.customModelID,
-      customBaseURL: env.ai.customBaseURL,
-      customAPIType: env.ai.customAPIType
+      providerID: env.AI_PROVIDER_ID as never,
+      apiKey: env.AI_API_KEY,
+      modelID: env.AI_MODEL_ID,
+      customModelID: env.AI_CUSTOM_MODEL_ID,
+      customBaseURL: env.AI_CUSTOM_BASE_URL,
+      customAPIType: env.AI_CUSTOM_API_TYPE
     },
     body.prompt,
     session.messages

@@ -3,100 +3,90 @@
 // `undefined` outside the desktop app anyway, which just falls back to global fetch.
 // Everything else is unchanged: same provider factories, same switch structure.
 
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createDeepSeek } from '@ai-sdk/deepseek'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
-import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-import type { LanguageModel } from 'ai'
-
-export type AIProviderID =
-  | 'openrouter'
-  | 'anthropic'
-  | 'openai'
-  | 'google'
-  | 'deepseek'
-  | 'zai'
-  | 'minimax'
-  | 'openai-compatible'
-  | 'anthropic-compatible'
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import type { LanguageModel } from "ai";
+import type { AIProviderID } from "@open-pencil/core";
 
 export type ModelConfig = {
-  providerID: AIProviderID
-  apiKey: string
-  modelID: string
-  customModelID: string
-  customBaseURL: string
-  customAPIType: 'completions' | 'responses'
-}
+  providerID: AIProviderID;
+  apiKey: string;
+  modelID: string;
+  customModelID: string;
+  customBaseURL: string;
+  customAPIType: "completions" | "responses";
+};
 
 export function resolveLanguageModelID(
-  config: Pick<ModelConfig, 'providerID' | 'modelID' | 'customModelID'>
+  config: Pick<ModelConfig, "providerID" | "modelID" | "customModelID">,
 ) {
-  const customModelID = config.customModelID.trim()
-  if (config.providerID === 'openrouter') return customModelID || config.modelID
-  if (config.providerID === 'openai-compatible' || config.providerID === 'anthropic-compatible') {
-    return customModelID
+  const customModelID = config.customModelID.trim();
+  if (config.providerID === "openrouter") return customModelID || config.modelID;
+  if (config.providerID === "openai-compatible" || config.providerID === "anthropic-compatible") {
+    return customModelID;
   }
-  return config.modelID
+  return config.modelID;
 }
 
 export function createLanguageModel(config: ModelConfig): LanguageModel {
-  const effectiveModelID = resolveLanguageModelID(config)
+  const effectiveModelID = resolveLanguageModelID(config);
 
   switch (config.providerID) {
-    case 'openrouter': {
+    case "openrouter": {
       const openrouter = createOpenRouter({
         apiKey: config.apiKey,
         headers: {
-          'X-OpenRouter-Title': 'OpenPencil (headless server)',
-          'HTTP-Referer': 'https://github.com/open-pencil/open-pencil'
-        }
-      })
-      return openrouter(effectiveModelID)
+          "X-OpenRouter-Title": "OpenPencil (headless server)",
+          "HTTP-Referer": "https://github.com/open-pencil/open-pencil",
+        },
+      });
+      return openrouter(effectiveModelID);
     }
-    case 'anthropic': {
-      const anthropic = createAnthropic({ apiKey: config.apiKey })
-      return anthropic(effectiveModelID)
+    case "anthropic": {
+      const anthropic = createAnthropic({ apiKey: config.apiKey });
+      return anthropic(effectiveModelID);
     }
-    case 'openai': {
-      const openai = createOpenAI({ apiKey: config.apiKey })
-      return openai(effectiveModelID)
+    case "openai": {
+      const openai = createOpenAI({ apiKey: config.apiKey });
+      return openai(effectiveModelID);
     }
-    case 'google': {
-      const google = createGoogleGenerativeAI({ apiKey: config.apiKey })
-      return google(effectiveModelID)
+    case "google": {
+      const google = createGoogleGenerativeAI({ apiKey: config.apiKey });
+      return google(effectiveModelID);
     }
-    case 'deepseek': {
-      const deepseek = createDeepSeek({ apiKey: config.apiKey })
-      return deepseek(effectiveModelID)
+    case "deepseek": {
+      const deepseek = createDeepSeek({ apiKey: config.apiKey });
+      return deepseek(effectiveModelID);
     }
-    case 'zai': {
+    case "zai": {
       const zai = createAnthropic({
         apiKey: config.apiKey,
-        baseURL: 'https://api.z.ai/api/anthropic'
-      })
-      return zai(effectiveModelID)
+        baseURL: "https://api.z.ai/api/anthropic",
+      });
+      return zai(effectiveModelID);
     }
-    case 'minimax': {
+    case "minimax": {
       const minimax = createOpenAI({
         apiKey: config.apiKey,
-        baseURL: 'https://api.minimax.io/v1'
-      })
-      return minimax.chat(effectiveModelID)
+        baseURL: "https://api.minimax.io/v1",
+      });
+      return minimax.chat(effectiveModelID);
     }
-    case 'openai-compatible': {
-      const custom = createOpenAI({ apiKey: config.apiKey, baseURL: config.customBaseURL })
-      return config.customAPIType === 'responses'
+    case "openai-compatible": {
+      const custom = createOpenAI({ apiKey: config.apiKey, baseURL: config.customBaseURL });
+      return config.customAPIType === "responses"
         ? custom.responses(effectiveModelID)
-        : custom.chat(effectiveModelID)
+        : custom.chat(effectiveModelID);
     }
-    case 'anthropic-compatible': {
-      const custom = createAnthropic({ apiKey: config.apiKey, baseURL: config.customBaseURL })
-      return custom(effectiveModelID)
+    case "anthropic-compatible": {
+      const custom = createAnthropic({ apiKey: config.apiKey, baseURL: config.customBaseURL });
+      return custom(effectiveModelID);
     }
     default: {
-      throw new Error(`Unknown provider: ${config.providerID}`)
+      throw new Error(`Unknown provider: ${config.providerID}`);
     }
   }
 }

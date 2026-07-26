@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 
-import { getDesignMetadata } from '../storage/metadata.js'
-import { getDesignBytes } from '../storage/s3.js'
+import { getDesignMetadata } from '@/storage/metadata.js'
+import { getDesignBytes } from '@/storage/s3.js'
 
 export async function getDesignRoute(c: Context) {
   const uuid = c.req.param('uuid')
@@ -11,7 +11,6 @@ export async function getDesignRoute(c: Context) {
   if (!metadata) return c.json({ error: `No saved design found for ${uuid}` }, 404)
 
   const bytes = await getDesignBytes(uuid)
-  console.log({bytes})
 
   // Raw bytes by default so the forked web client can pipe this straight into its
   // existing "open .fig file" import path. Add ?format=json if you'd rather return

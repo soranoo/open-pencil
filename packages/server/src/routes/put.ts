@@ -1,8 +1,8 @@
 import type { Context } from 'hono'
 
-import { putDesignBytes } from '../storage/s3.js'
-import { getDesignMetadata, upsertDesignMetadata } from '../storage/metadata.js'
-import { markSaved } from '../session-manager.js'
+import { putDesignBytes } from '@/storage/s3.js'
+import { getDesignMetadata, upsertDesignMetadata } from '@/storage/metadata.js'
+import { markSaved } from '@/session-manager.js'
 
 /**
  * Companion to POST /designs/:uuid/save. That route serializes a session this server
