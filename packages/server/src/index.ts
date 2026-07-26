@@ -10,11 +10,7 @@ import { putDesignRoute } from "@/routes/put.js";
 
 const app = new Hono();
 
-// The forked web client calls this server directly from the browser (different origin/
-// port), so it needs CORS. Tighten `origin` to your actual app's origin(s) before
-// deploying anywhere past localhost.
-// app.use('*', cors({ origin: env.corsOrigin, allowMethods: ['GET', 'POST', 'PUT'] }))
-app.use("*", cors({ origin: "http://localhost:1420", allowMethods: ["GET", "POST", "PUT"] }));
+app.use('*', cors({ origin: env.CORS_ORIGIN, allowMethods: ['GET', 'POST', 'PUT'] }))
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 

@@ -22,8 +22,7 @@ export const env = createEnv({
     AI_MODEL_ID: z.string().min(1),
 
     // Required to be set when using a *-compatible provider (e.g. OpenAI-compatible, Anthropic-compatible, OpenRouter).
-    AI_CUSTOM_MODEL_ID: z.string().min(1),
-    AI_CUSTOM_BASE_URL: z.string().min(1),
+    AI_CUSTOM_BASE_URL: z.string().min(1).optional(),
     AI_CUSTOM_API_TYPE: z.enum(["completions", "responses"]).default("completions"),
 
     S3_ENDPOINT: z.string().min(1),
@@ -39,12 +38,12 @@ export const env = createEnv({
      *
      * See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
      */
-    S3_FORCE_PATH_STYLE: z.boolean().default(true),
+    S3_FORCE_PATH_STYLE: z.coerce.boolean().default(true),
 
     DATABASE_URL: z.string().min(1),
-    SESSION_TTL_MINUTES: z.number().min(1).default(30),
+    SESSION_TTL_MINUTES: z.coerce.number().min(1).default(30),
 
-    CORS_ORIGIN: z.string().min(1),
+    CORS_ORIGIN: z.union([z.url(), z.array(z.url())]).default("http://localhost:1420"),
   },
 
   /**

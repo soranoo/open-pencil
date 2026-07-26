@@ -15,20 +15,14 @@ export type ModelConfig = {
   providerID: AIProviderID;
   apiKey: string;
   modelID: string;
-  customModelID: string;
-  customBaseURL: string;
-  customAPIType: "completions" | "responses";
+  customBaseURL?: string;
+  customAPIType?: "completions" | "responses";
 };
 
 export function resolveLanguageModelID(
-  config: Pick<ModelConfig, "providerID" | "modelID" | "customModelID">,
+  config: Pick<ModelConfig, "modelID">,
 ) {
-  const customModelID = config.customModelID.trim();
-  if (config.providerID === "openrouter") return customModelID || config.modelID;
-  if (config.providerID === "openai-compatible" || config.providerID === "anthropic-compatible") {
-    return customModelID;
-  }
-  return config.modelID;
+  return config.modelID.trim();
 }
 
 export function createLanguageModel(config: ModelConfig): LanguageModel {
