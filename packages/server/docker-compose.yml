@@ -9,13 +9,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openpencil}
       POSTGRES_DB: ${POSTGRES_DB:-openpencil}
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
       # runs once on first container start — creates the `designs` table automatically
       - ./src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openpencil}']
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openpencil}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,12 +28,12 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-openpencil}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-openpencil-secret}
     ports:
-      - '9000:9000' # S3 API
-      - '9001:9001' # web console — http://localhost:9001
+      - "9000:9000" # S3 API
+      - "9001:9001" # web console — http://localhost:9001
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 10

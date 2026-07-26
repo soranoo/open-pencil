@@ -13,38 +13,38 @@
 // Kept identical to upstream: MAX_AGENT_STEPS via stepCountIs, the Anthropic prompt-caching
 // provider option, and the model resolution logic.
 
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
-import { ToolLoopAgent, stepCountIs } from 'ai'
-import type { ModelMessage } from 'ai'
+import { ToolLoopAgent, stepCountIs } from "ai";
+import type { ModelMessage } from "ai";
 
-import { createLanguageModel, resolveLanguageModelID } from './model.js'
-import type { AIProviderID, ModelConfig } from './model.js'
-import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from './headless-tools.js'
-import type { RunState } from './headless-tools.js'
-import type { DocumentHandle } from './document.js'
+import { createLanguageModel, resolveLanguageModelID } from "./model.js";
+import type { AIProviderID, ModelConfig } from "./model.js";
+import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless-tools.js";
+import type { RunState } from "./headless-tools.js";
+import type { DocumentHandle } from "./document.js";
 
-const SYSTEM_PROMPT_PATH = fileURLToPath(new URL('./system-prompt.md', import.meta.url))
-const SYSTEM_PROMPT = readFileSync(SYSTEM_PROMPT_PATH, 'utf-8')
+const SYSTEM_PROMPT_PATH = fileURLToPath(new URL("./system-prompt.md", import.meta.url));
+const SYSTEM_PROMPT = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
 
 const ANTHROPIC_CACHE_CONTROL = {
-  anthropic: { cacheControl: { type: 'ephemeral' } }
-} as const
+  anthropic: { cacheControl: { type: "ephemeral" } },
+} as const;
 
 function supportsAnthropicCaching(providerID: AIProviderID, modelID: string): boolean {
   return (
-    providerID === 'anthropic' ||
-    providerID === 'anthropic-compatible' ||
-    (providerID === 'openrouter' && modelID.startsWith('anthropic/'))
-  )
+    providerID === "anthropic" ||
+    providerID === "anthropic-compatible" ||
+    (providerID === "openrouter" && modelID.startsWith("anthropic/"))
+  );
 }
 
 export interface GenerateResult {
-  messages: ModelMessage[]
-  toolLog: RunState['toolLog']
-  text: string
-  hitStepLimit: boolean
+  messages: ModelMessage[];
+  toolLog: RunState["toolLog"];
+  text: string;
+  hitStepLimit: boolean;
 }
 
 /**
@@ -56,14 +56,14 @@ export async function runPrompt(
   doc: DocumentHandle,
   modelConfig: ModelConfig,
   prompt: string,
-  previousMessages: ModelMessage[] = []
+  previousMessages: ModelMessage[] = [],
 ): Promise<GenerateResult> {
-  const runState = createRunState()
-  const tools = createHeadlessTools(doc.figma, runState)
-  const effectiveModelID = resolveLanguageModelID(modelConfig)
+  const runState = createRunState();
+  const tools = createHeadlessTools(doc.figma, runState);
+  const effectiveModelID = resolveLanguageModelID(modelConfig);
   const cacheProviderOptions = supportsAnthropicCaching(modelConfig.providerID, effectiveModelID)
     ? ANTHROPIC_CACHE_CONTROL
-    : undefined
+    : undefined;
 
   const agent = new ToolLoopAgent({
     model: createLanguageModel(modelConfig),
@@ -74,17 +74,17 @@ export async function runPrompt(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tools: tools as any,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
-    providerOptions: cacheProviderOptions
-  })
+    providerOptions: cacheProviderOptions,
+  });
 
   const result = await agent.generate({
-    messages: [...previousMessages, { role: 'user', content: prompt }]
-  })
+    messages: [...previousMessages, { role: "user", content: prompt }],
+  });
 
   return {
-    messages: [...previousMessages, { role: 'user', content: prompt }, ...result.response.messages],
+    messages: [...previousMessages, { role: "user", content: prompt }, ...result.response.messages],
     toolLog: runState.toolLog,
     text: result.text,
-    hitStepLimit: runState.currentSteps >= MAX_AGENT_STEPS
-  }
+    hitStepLimit: runState.currentSteps >= MAX_AGENT_STEPS,
+  };
 }

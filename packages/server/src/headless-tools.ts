@@ -15,24 +15,24 @@
 // Everything else — CORE_TOOLS, toolsToAI, the valibot/tool adapter wiring — is used exactly
 // as upstream uses it, since that part was already framework-agnostic.
 
-import { valibotSchema } from '@ai-sdk/valibot'
-import { tool } from 'ai'
-import * as v from 'valibot'
+import { valibotSchema } from "@ai-sdk/valibot";
+import { tool } from "ai";
+import * as v from "valibot";
 
-import type { FigmaAPI } from '@open-pencil/core/figma-api'
-import { computeAllLayouts } from '@open-pencil/core/layout'
-import { CORE_TOOLS, toolsToAI } from '@open-pencil/core/tools'
-import type { ToolLogEntry } from '@open-pencil/core/tools'
+import type { FigmaAPI } from "@open-pencil/core/figma-api";
+import { computeAllLayouts } from "@open-pencil/core/layout";
+import { CORE_TOOLS, toolsToAI } from "@open-pencil/core/tools";
+import type { ToolLogEntry } from "@open-pencil/core/tools";
 
-export const MAX_AGENT_STEPS = 50
+export const MAX_AGENT_STEPS = 50;
 
 export interface RunState {
-  toolLog: ToolLogEntry[]
-  currentSteps: number
+  toolLog: ToolLogEntry[];
+  currentSteps: number;
 }
 
 export function createRunState(): RunState {
-  return { toolLog: [], currentSteps: 0 }
+  return { toolLog: [], currentSteps: 0 };
 }
 
 /**
@@ -51,17 +51,17 @@ export function createHeadlessTools(figma: FigmaAPI, runState: RunState) {
       },
       onAfterExecute: (def) => {
         if (def.mutates) {
-          computeAllLayouts(figma.graph, figma.currentPageId)
+          computeAllLayouts(figma.graph, figma.currentPageId);
         }
       },
       onFlashNodes: () => {
         // No canvas to highlight. No-op.
       },
       onToolLog: (entry) => {
-        runState.toolLog.push(entry)
-        runState.currentSteps++
+        runState.toolLog.push(entry);
+        runState.currentSteps++;
       },
-      getStepBudget: () => ({ current: runState.currentSteps, max: MAX_AGENT_STEPS })
+      getStepBudget: () => ({ current: runState.currentSteps, max: MAX_AGENT_STEPS }),
     },
     // NOTE: @open-pencil/core's published .d.ts references its own internal, bundled
     // copies of `ai`/`valibot`/`@ai-sdk/valibot` (visible as nested node_modules/.bun/...
@@ -70,6 +70,6 @@ export function createHeadlessTools(figma: FigmaAPI, runState: RunState) {
     // compatible at runtime but TypeScript treats them as distinct nominal types, which
     // trips strict checking here. The cast is a pragmatic workaround for that packaging
     // gap — worth raising upstream — not a sign the wiring itself is wrong.
-    { v, valibotSchema, tool } as unknown as Parameters<typeof toolsToAI>[2]
-  )
+    { v, valibotSchema, tool } as unknown as Parameters<typeof toolsToAI>[2],
+  );
 }

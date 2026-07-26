@@ -1,35 +1,35 @@
-import type { Context } from 'hono'
+import type { Context } from "hono";
 
-import { runPrompt } from '@/chat-engine.js'
-import { loadDocument } from '@/document.js'
-import { env } from '@/env'
-import { getDesignBytes } from '@/storage/s3.js'
-import { createSession, getSession } from '@/session-manager.js'
+import { runPrompt } from "@/chat-engine.js";
+import { loadDocument } from "@/document.js";
+import { env } from "@/env";
+import { getDesignBytes } from "@/storage/s3.js";
+import { createSession, getSession } from "@/session-manager.js";
 
 interface GenerateBody {
-  prompt: string
-  designId?: string
+  prompt: string;
+  designId?: string;
 }
 
 export async function generateRoute(c: Context) {
-  const body = await c.req.json<GenerateBody>().catch(() => null)
+  const body = await c.req.json<GenerateBody>().catch(() => null);
   if (!body?.prompt) {
-    return c.json({ error: 'prompt is required' }, 400)
+    return c.json({ error: "prompt is required" }, 400);
   }
 
   // Resolve or create the session:
   //   - designId provided + already warm in memory -> reuse it (multi-turn refinement)
   //   - designId provided + not in memory -> pull bytes from S3 and rehydrate
   //   - no designId -> brand-new blank document, fresh UUID
-  let session = body.designId ? getSession(body.designId) : undefined
+  let session = body.designId ? getSession(body.designId) : undefined;
   if (!session && body.designId) {
-    const bytes = await getDesignBytes(body.designId).catch(() => null)
-    if (!bytes) return c.json({ error: `No saved design found for ${body.designId}` }, 404)
-    const doc = await loadDocument(bytes)
-    session = createSession(doc, body.designId)
+    const bytes = await getDesignBytes(body.designId).catch(() => null);
+    if (!bytes) return c.json({ error: `No saved design found for ${body.designId}` }, 404);
+    const doc = await loadDocument(bytes);
+    session = createSession(doc, body.designId);
   }
   if (!session) {
-    session = createSession()
+    session = createSession();
   }
 
   const result = await runPrompt(
@@ -40,13 +40,13 @@ export async function generateRoute(c: Context) {
       modelID: env.AI_MODEL_ID,
       customModelID: env.AI_CUSTOM_MODEL_ID,
       customBaseURL: env.AI_CUSTOM_BASE_URL,
-      customAPIType: env.AI_CUSTOM_API_TYPE
+      customAPIType: env.AI_CUSTOM_API_TYPE,
     },
     body.prompt,
-    session.messages
-  )
+    session.messages,
+  );
 
-  session.messages = result.messages
+  session.messages = result.messages;
 
   return c.json({
     designId: session.id,
@@ -54,6 +54,6 @@ export async function generateRoute(c: Context) {
     toolCallCount: result.toolLog.length,
     hitStepLimit: result.hitStepLimit,
     // Handy for a caller building their own progress UI without needing SSE.
-    toolLog: result.toolLog.map((entry) => ({ tool: entry.tool, mutates: entry.mutates }))
-  })
+    toolLog: result.toolLog.map((entry) => ({ tool: entry.tool, mutates: entry.mutates })),
+  });
 }

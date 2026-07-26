@@ -99,11 +99,11 @@ npm run dev                 # http://localhost:8787
 
 ## API
 
-| Route | Body / params | What happens |
-|---|---|---|
-| `POST /generate` | `{ prompt, designId? }` | Creates a blank session, or resumes/reloads `designId`, runs one agent turn, mutates the in-memory document. Nothing is persisted yet. |
-| `POST /designs/:uuid/save` | — | Serializes the session's current document to `.fig` bytes, writes to S3, upserts metadata in Postgres. |
-| `GET /designs/:uuid` | `?format=json` optional | Returns raw `.fig` bytes (default) or `{ metadata, dataBase64 }` if `?format=json` is set. |
+| Route                      | Body / params           | What happens                                                                                                                           |
+| -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /generate`           | `{ prompt, designId? }` | Creates a blank session, or resumes/reloads `designId`, runs one agent turn, mutates the in-memory document. Nothing is persisted yet. |
+| `POST /designs/:uuid/save` | —                       | Serializes the session's current document to `.fig` bytes, writes to S3, upserts metadata in Postgres.                                 |
+| `GET /designs/:uuid`       | `?format=json` optional | Returns raw `.fig` bytes (default) or `{ metadata, dataBase64 }` if `?format=json` is set.                                             |
 
 Unsaved sessions are dropped automatically after `SESSION_TTL_MINUTES` of inactivity — that's
 the "discard if not explicitly saved" behavior from the original spec.
@@ -115,10 +115,10 @@ to be fully local-first. To open a saved design from this backend in the browser
 bootstrap check early in the app's startup (e.g. in `src/main.ts`):
 
 ```ts
-const params = new URLSearchParams(location.search)
-const designId = params.get('designId')
+const params = new URLSearchParams(location.search);
+const designId = params.get("designId");
 if (designId) {
-  const bytes = await fetch(`${SERVER_URL}/designs/${designId}`).then((r) => r.arrayBuffer())
+  const bytes = await fetch(`${SERVER_URL}/designs/${designId}`).then((r) => r.arrayBuffer());
   // hand `bytes` to whatever the app already calls on File > Open — the same
   // io.readDocument() codepath this backend uses in document.ts
 }
@@ -133,7 +133,7 @@ duplicating import logic.
 These are called out in the accompanying spec doc and still apply here:
 
 1. **Text/font metrics headlessly** — `headless-tools.ts` drops the `ensureGraphFonts(...,
-   store.renderer)` call from upstream since there's no live renderer. `@open-pencil/core/io`
+store.renderer)` call from upstream since there's no live renderer. `@open-pencil/core/io`
    does export `initCanvasKit` / `headlessRenderNodes` for headless raster rendering, which
    is a good sign, but verify text layout matches the in-app result before trusting
    typography-heavy prompts.

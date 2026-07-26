@@ -1,22 +1,22 @@
-import { createEnv } from '@t3-oss/env-core'
-import * as z from 'zod'
+import { createEnv } from "@t3-oss/env-core";
+import * as z from "zod";
 
-import type { AIProviderID } from '@open-pencil/core'
+import type { AIProviderID } from "@open-pencil/core";
 
 export const env = createEnv({
   server: {
     PORT: z.coerce.number().min(1).default(8787),
 
     AI_PROVIDER_ID: z.enum([
-      'openrouter',
-      'anthropic',
-      'openai',
-      'google',
-      'deepseek',
-      'zai',
-      'minimax',
-      'openai-compatible',
-      'anthropic-compatible'
+      "openrouter",
+      "anthropic",
+      "openai",
+      "google",
+      "deepseek",
+      "zai",
+      "minimax",
+      "openai-compatible",
+      "anthropic-compatible",
     ] satisfies AIProviderID[]),
     AI_API_KEY: z.string().min(1),
     AI_MODEL_ID: z.string().min(1),
@@ -24,7 +24,7 @@ export const env = createEnv({
     // Required to be set when using a *-compatible provider (e.g. OpenAI-compatible, Anthropic-compatible, OpenRouter).
     AI_CUSTOM_MODEL_ID: z.string().min(1),
     AI_CUSTOM_BASE_URL: z.string().min(1),
-    AI_CUSTOM_API_TYPE: z.enum(['completions', 'responses']).default('completions'),
+    AI_CUSTOM_API_TYPE: z.enum(["completions", "responses"]).default("completions"),
 
     S3_ENDPOINT: z.string().min(1),
     S3_REGION: z.string().min(1),
@@ -44,7 +44,7 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1),
     SESSION_TTL_MINUTES: z.number().min(1).default(30),
 
-    CORS_ORIGIN: z.string().min(1)
+    CORS_ORIGIN: z.string().min(1),
   },
 
   /**
@@ -66,5 +66,5 @@ export const env = createEnv({
    * In order to solve these issues, we recommend that all new projects
    * explicitly specify this option as true.
    */
-  emptyStringAsUndefined: true
-})
+  emptyStringAsUndefined: true,
+});
