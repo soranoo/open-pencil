@@ -157,6 +157,17 @@ api.put(
   describeRoute({
     summary: "Upload modified design bytes",
     description: "Accepts raw file binary edited client-side and saves it directly into storage.",
+    requestBody: {
+      required: true,
+      content: {
+        "application/octet-stream": {
+          schema: {
+            type: "string",
+            format: "binary",
+          },
+        },
+      },
+    },
     responses: {
       200: {
         description: "Design updated successfully",
