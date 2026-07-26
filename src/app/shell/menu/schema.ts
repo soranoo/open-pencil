@@ -26,30 +26,37 @@ export interface AppMenuGroupSchema {
   target?: AppMenuTarget
   items: AppMenuEntry[]
 }
-
 export const APP_MENU_SCHEMA = [
   {
     label: 'File',
     items: [
-      { id: 'new', label: 'New', shortcut: 'MOD+N' },
-      { id: 'open', label: 'Open…', shortcut: 'MOD+O' },
+      ...(import.meta.env.VITE_IS_BACKEND_MODE == 'true'
+        ? [{ id: 'save', label: 'Save', shortcut: 'MOD+S' }]
+        : ([
+            { id: 'new', label: 'New', shortcut: 'MOD+N' },
+            { id: 'open', label: 'Open…', shortcut: 'MOD+O' },
+            { type: 'separator' },
+            { id: 'save', label: 'Save', shortcut: 'MOD+S' },
+            { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' },
+            { type: 'separator' },
+            {
+              id: 'export-selection',
+              label: 'Export Selection',
+              shortcut: 'MOD+SHIFT+E',
+              sub: [
+                { id: 'export-png', label: 'PNG' },
+                { id: 'export-svg', label: 'SVG' },
+                { id: 'export-fig', label: '.fig' }
+              ]
+            }
+          ] satisfies AppMenuEntry[])),
       { type: 'separator' },
-      { id: 'save', label: 'Save', shortcut: 'MOD+S' },
-      { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' },
-      { type: 'separator' },
-      {
-        id: 'export-selection',
-        label: 'Export Selection',
-        shortcut: 'MOD+SHIFT+E',
-        sub: [
-          { id: 'export-png', label: 'PNG' },
-          { id: 'export-svg', label: 'SVG' },
-          { id: 'export-fig', label: '.fig' }
-        ]
-      },
-      { type: 'separator' },
-      { id: 'autosave', label: 'Autosave', checkbox: true },
-      { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
+      ...(import.meta.env.VITE_IS_BACKEND_MODE == 'true'
+        ? []
+        : [
+          { id: 'autosave', label: 'Autosave', checkbox: true },
+          { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
+        ]),
     ]
   },
   {
