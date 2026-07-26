@@ -28,6 +28,7 @@ import SafariBanner from '@/components/SafariBanner.vue'
 import TabBar from '@/components/TabBar.vue'
 import Tip from '@/components/ui/Tip.vue'
 import Toolbar from '@/components/Toolbar/Toolbar.vue'
+import UnsavedChangesBanner from '@/components/UnsavedChangesBanner.vue'
 
 const route = useRoute()
 const params = useUrlSearchParams('history')
@@ -114,6 +115,7 @@ onUnmounted(() => {
 <template>
   <div data-test-id="editor-root" class="flex h-screen w-screen flex-col">
     <SafariBanner />
+    <UnsavedChangesBanner />
     <TabBar />
 
     <!-- Desktop layout -->

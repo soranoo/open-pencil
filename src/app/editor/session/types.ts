@@ -2,6 +2,8 @@ import { createDefaultEditorState, type EditorState } from '@open-pencil/core/ed
 
 import type { NodeEditState } from '@/app/editor/vector-edit/types'
 
+const AUTOSAVE_ENABLED_BY_DEFAULT = import.meta.env.VITE_OPENPENCIL_AUTOSAVE === 'true'
+
 export function createInitialAppEditorState(pageId: string): AppEditorState {
   return {
     ...createDefaultEditorState(pageId),
@@ -13,7 +15,7 @@ export function createInitialAppEditorState(pageId: string): AppEditorState {
     actionToast: null,
     mobileDrawerSnap: 'closed',
     clipboardHtml: '',
-    autosaveEnabled: false,
+    autosaveEnabled: AUTOSAVE_ENABLED_BY_DEFAULT,
     cursorCanvasX: null,
     cursorCanvasY: null,
     nodeEditState: null,

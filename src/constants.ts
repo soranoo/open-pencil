@@ -69,6 +69,9 @@ export const ROOM_ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
 export const WEB_APP_ORIGIN = 'https://app.openpencil.dev'
 
+export const IS_BACKEND_MODE =
+  import.meta.env.IS_BACKEND_MODE === 'true' || import.meta.env.VITE_IS_BACKEND_MODE === 'true'
+
 export function getShareUrl(roomId: string): string {
   const base = IS_TAURI || !IS_BROWSER ? WEB_APP_ORIGIN : window.location.origin
   return `${base}/share/${roomId}`

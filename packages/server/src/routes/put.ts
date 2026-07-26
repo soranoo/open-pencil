@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 
+import { loadDocument } from "@/document.js";
 import { putDesignBytes } from "@/storage/s3.js";
 import { getDesignMetadata, upsertDesignMetadata } from "@/storage/metadata.js";
 import { markSaved } from "@/session-manager.js";
-
 /**
  * Companion to POST /designs/:uuid/save. That route serializes a session this server
  * already has in memory (from a prior /generate call). This route instead accepts bytes
@@ -12,24 +12,43 @@ import { markSaved } from "@/session-manager.js";
  * server-bridge.ts calls this on "Save to server".
  */
 export async function putDesignRoute(c: Context) {
-  const uuid = c.req.param("uuid");
-  if (!uuid) return c.json({ error: "uuid is required" }, 400);
+  const { uuid } = c.req.param();
+  if (!uuid) {
+    return c.json({ error: "uuid is required" }, 400);
+  }
 
-  const bytes = new Uint8Array(await c.req.arrayBuffer());
-  if (bytes.byteLength === 0) return c.json({ error: "empty body" }, 400);
+  const bytes = await c.req.arrayBuffer();
+  if (bytes.byteLength === 0) {
+    return c.json({ error: "empty body" }, 400);
+  }
 
-  await putDesignBytes(uuid, bytes);
+  const uint8Bytes = new Uint8Array(bytes);
 
-  // Preserve prompt history if this uuid already has a generation record; otherwise
-  // this is a design that only ever existed client-side, saved to the server for the
-  // first time.
+  try {
+    await loadDocument(uint8Bytes);
+  } catch (err) {
+    return c.json(
+      {
+        error: `Uploaded bytes are not a valid document: ${(err as Error).message}`,
+      },
+      400,
+    );
+  }
+
+  await putDesignBytes(uuid, uint8Bytes);
+
   const existing = await getDesignMetadata(uuid);
+
   await upsertDesignMetadata({
     id: uuid,
     promptHistory: existing?.promptHistory ?? [],
     s3Key: `designs/${uuid}.fig`,
   });
+
   markSaved(uuid);
 
-  return c.json({ designId: uuid, savedBytes: bytes.byteLength });
+  return c.json({
+    designId: uuid,
+    savedBytes: uint8Bytes.byteLength,
+  });
 }

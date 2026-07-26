@@ -114,6 +114,14 @@ export function createDocumentSourceActions({
     void startWatchingFile()
   }
 
+  function hasUnsavedChanges() {
+    return state.sceneVersion !== getSavedVersion()
+  }
+
+  function markDocumentSaved() {
+    setSavedVersion(state.sceneVersion)
+  }
+
   function disposeDocumentIO() {
     stopWatchingFile()
     disposeAutosave()
@@ -123,6 +131,8 @@ export function createDocumentSourceActions({
     setDocumentSource,
     setPlannedFilePath,
     startWatchingCurrentFile,
+    hasUnsavedChanges,
+    markDocumentSaved,
     disposeDocumentIO,
     saveFigFile,
     saveFigFileAs

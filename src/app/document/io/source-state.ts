@@ -1,11 +1,12 @@
 import type { DocumentSourceIdentity } from '@/app/document/io/types'
+import { ref } from 'vue'
 
 export function createDocumentSourceState() {
   let fileHandle: FileSystemFileHandle | null = null
   let filePath: string | null = null
   let downloadName: string | null = null
   let sourceIdentity: DocumentSourceIdentity = { handle: null, path: null }
-  let savedVersion = 0
+  const saveVersion = ref(0)
   let lastWriteTime = 0
 
   return {
@@ -25,9 +26,9 @@ export function createDocumentSourceState() {
     setSourceIdentity: (identity: DocumentSourceIdentity) => {
       sourceIdentity = identity
     },
-    getSavedVersion: () => savedVersion,
+    getSavedVersion: () => saveVersion.value,
     setSavedVersion: (version: number) => {
-      savedVersion = version
+      saveVersion.value = version
     },
     getLastWriteTime: () => lastWriteTime,
     setLastWriteTime: (time: number) => {
