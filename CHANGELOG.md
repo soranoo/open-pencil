@@ -19,12 +19,14 @@
 - Drag with the Text tool to create a fixed-size text box, or click to create auto-width text.
 - Target a specific open document and page from live CLI and MCP automation, including sessions with multiple documents.
 - Test OpenAI-compatible provider connections from AI settings with clearer setup errors.
-- Build custom property panels with new Vue SDK number fields, bindable values, property sections, segmented controls, property lists, color models, fill controls, and gradient primitives.
+- Manage AI, agent, and media credentials from unified Settings, using the system credential store on desktop and optional encrypted storage in the browser.
+- Build custom property panels with new Vue SDK number fields, bindable values, property sections, responsive property grids, segmented controls, property lists, color models, fill controls, and gradient primitives.
 - Connect local MCP clients through automatically discovered private Unix sockets on macOS and Linux, with localhost TCP fallback. (#338)
 - Create centered frames from current Figma-style device and asset presets, or resize selected frames from the Design panel while preserving their names.
 
 ### Changed
 
+- Choose Freeform, vertical, horizontal, or grid flow directly from the contextual Layout section, with sizing grouped alongside it and current Layout guide terminology.
 - Redesign the editor chrome and Design panel with denser aligned controls, clearer selection and section states, improved menus and overlays, consistent light/dark theming, and better keyboard and screen-reader behavior.
 - Scale the Layers panel to documents with thousands of nodes through virtualized rows, faster incremental updates, stable expansion, range selection, and scroll-to-selection.
 - Resolve fonts before text appears, with language-aware CJK and Arabic fallback, character-specific remote subsets, and more reliable rendering as fonts load.
@@ -44,6 +46,8 @@
 - Match Figma auto-layout reflow after deleting children, hiding optional instance slots, or syncing component changes.
 - Make group and boolean-operation children scale with their parent during resize.
 - Restore desktop copy, cut, and paste when browser clipboard events are unavailable.
+- Show only the most specific tooltip when property controls contain nested actions.
+- Start globally installed ACP agents correctly on Windows instead of reporting them as unavailable (#361).
 - Keep duplicated layers independent instead of sharing mutable fills, strokes, bindings, overrides, or vector data, and remove stale bindings when paints are deleted.
 - Preserve Hangul IME composition while editing text.
 - Share public app links from the desktop collaboration panel and send the current document to newly joined collaborators.
