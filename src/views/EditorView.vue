@@ -17,6 +17,7 @@ import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { createDemoShapes } from '@/app/demo/document'
 import { useEditorStore } from '@/app/editor/active-store'
 import { createTab, activeTab, getActiveStore, tabCount } from '@/app/tabs'
+import { IS_DISABLE_COLLABORATION } from '@/constants'
 
 import CollabPanel from '@/components/CollabPanel/CollabPanel.vue'
 import EditorCanvas from '@/components/EditorCanvas.vue'
@@ -158,6 +159,7 @@ onUnmounted(() => {
         class="flex flex-col"
       >
         <div
+          v-if="!IS_DISABLE_COLLABORATION"
           class="flex shrink-0 items-center justify-between border-b border-border px-1.5 py-1.5"
         >
           <CollabPanel />

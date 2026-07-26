@@ -9,12 +9,17 @@ interface ImportMetaEnv {
   readonly VITE_OPENPENCIL_SERVER_URL: string
   readonly VITE_OPENPENCIL_AUTOSAVE: 'true' | 'false'
   readonly VITE_OPENPENCIL_SERVER_SAVE_DEBOUNCE_MS: string
-  readonly VITE_DISABLE_TAB: 'true' | 'false'
 
   /**
    * Backend mode toggle. Set to 'true' to use backend-only save flow.
-   */
-  readonly VITE_IS_BACKEND_MODE?: 'true' | 'false'
+  */
+ readonly VITE_IS_BACKEND_MODE?: 'true' | 'false'
+  
+ // Feature Flags
+ // TODO: fully disable tab features (now UI and limit tab creation only)
+ readonly VITE_DISABLE_TAB?: 'true' | 'false'
+ // TODO: fully disable collaboration features (now UI only)
+ readonly VITE_DISABLE_COLLABORATION?: 'true' | 'false'
 }
 
 interface ImportMeta {

@@ -1,5 +1,6 @@
-import { IS_BACKEND_MODE } from '@/constants'
 import type { EditorCommandId } from '@open-pencil/vue'
+
+import { IS_BACKEND_MODE } from '@/constants'
 
 export type AppMenuTarget = 'all' | 'browser' | 'native'
 
@@ -51,13 +52,13 @@ export const APP_MENU_SCHEMA = [
               ]
             }
           ] satisfies AppMenuEntry[])),
-      { type: 'separator' },
       ...(IS_BACKEND_MODE
         ? []
-        : [
-          { id: 'autosave', label: 'Autosave', checkbox: true },
-          { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
-        ]),
+        : ([
+            { type: 'separator' },
+            { id: 'autosave', label: 'Autosave', checkbox: true },
+            { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
+          ] satisfies AppMenuEntry[]))
     ]
   },
   {
