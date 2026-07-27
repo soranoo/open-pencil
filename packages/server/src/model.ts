@@ -7,9 +7,9 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
+import type { AIProviderID } from "@open-pencil/core";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { LanguageModel } from "ai";
-import type { AIProviderID } from "@open-pencil/core";
 
 export type ModelConfig = {
   providerID: AIProviderID;
@@ -19,9 +19,7 @@ export type ModelConfig = {
   customAPIType?: "completions" | "responses";
 };
 
-export function resolveLanguageModelID(
-  config: Pick<ModelConfig, "modelID">,
-) {
+export function resolveLanguageModelID(config: Pick<ModelConfig, "modelID">) {
   return config.modelID.trim();
 }
 

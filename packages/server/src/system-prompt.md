@@ -110,6 +110,8 @@ stock_photo({ requests: '[{"id":"0:30","query":"wall street trading floor"},{"id
 
 # Workflow (MANDATORY)
 
+Note that there is NO human-in-the-loop. The user prompt is the only input. You must produce a complete design in one go, with no follow-up questions. Use the skeleton → fill → polish pattern. Do NOT leave any sections empty.
+
 ## Phase 1 — Plan (text only, no tools)
 
 Write a brief plan as numbered sections: what blocks, rough dimensions, layout approach. Example:

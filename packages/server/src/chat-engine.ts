@@ -16,15 +16,15 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import type { AIProviderID } from "@open-pencil/core";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import type { ModelMessage } from "ai";
 
-import { createLanguageModel, resolveLanguageModelID } from "./model.js";
-import type { ModelConfig } from "./model.js";
+import type { DocumentHandle } from "./document.js";
 import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless-tools.js";
 import type { RunState } from "./headless-tools.js";
-import type { DocumentHandle } from "./document.js";
-import type { AIProviderID } from "@open-pencil/core";
+import { createLanguageModel, resolveLanguageModelID } from "./model.js";
+import type { ModelConfig } from "./model.js";
 
 const SYSTEM_PROMPT_PATH = fileURLToPath(new URL("./system-prompt.md", import.meta.url));
 const SYSTEM_PROMPT = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");

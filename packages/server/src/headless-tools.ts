@@ -16,13 +16,12 @@
 // as upstream uses it, since that part was already framework-agnostic.
 
 import { valibotSchema } from "@ai-sdk/valibot";
-import { tool } from "ai";
-import * as v from "valibot";
-
 import type { FigmaAPI } from "@open-pencil/core/figma-api";
 import { computeAllLayouts } from "@open-pencil/core/layout";
 import { CORE_TOOLS, toolsToAI } from "@open-pencil/core/tools";
 import type { ToolLogEntry } from "@open-pencil/core/tools";
+import { tool } from "ai";
+import * as v from "valibot";
 
 export const MAX_AGENT_STEPS = 50;
 

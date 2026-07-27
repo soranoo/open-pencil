@@ -1,24 +1,33 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { describeRoute, openAPIRouteHandler, resolver, validator } from "hono-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
+import { Hono } from "hono";
+import { describeRoute, openAPIRouteHandler, resolver, validator } from "hono-openapi";
+import { cors } from "hono/cors";
 
 import { env } from "@/env";
+import { getFrontendUrlRoute } from "@/routes/frontend-url.js";
+import { generateStatusRoute } from "@/routes/generate-status.js";
 import { generateRoute } from "@/routes/generate.js";
-import { saveRoute } from "@/routes/save.js";
 import { getDesignRoute } from "@/routes/get.js";
 import { putDesignRoute } from "@/routes/put.js";
+import { queueSizeRoute } from "@/routes/queue-size.js";
+import { saveRoute } from "@/routes/save.js";
 import {
   errorResponseSchema,
   generateBodySchema,
   generateResponseSchema,
+  generateStatusParamsSchema,
+  generateStatusResponseSchema,
   getDesignJsonResponseSchema,
   getDesignParamsSchema,
   getDesignQuerySchema,
+  getFrontendUrlParamsSchema,
+  getFrontendUrlQuerySchema,
+  getFrontendUrlResponseSchema,
   healthCheckResponseSchema,
   putDesignParamsSchema,
   putDesignResponseSchema,
+  queueSizeResponseSchema,
   saveParamsSchema,
   saveResponseSchema,
 } from "@/schemas.js";
@@ -35,6 +44,10 @@ app.use(
 );
 
 const api = app.basePath("/api/v1");
+const api_generate = api.basePath("/generate");
+const api_generateStatus = api_generate.basePath("/status");
+const api_design = api.basePath("/design");
+const api_openapi = api.basePath("/openapi");
 
 // Health Check
 api.get(
@@ -55,8 +68,8 @@ api.get(
 );
 
 // Generate Design Endpoint
-api.post(
-  "/generate",
+api_generate.post(
+  "/",
   describeRoute({
     summary: "Generate or update a design",
     description:
@@ -86,9 +99,51 @@ api.post(
   generateRoute,
 );
 
+api_generateStatus.get(
+  "/:requestId",
+  describeRoute({
+    summary: "Get queued generation request status",
+    description:
+      "Returns queue position while pending and completion/failure details once generation has finished.",
+    responses: {
+      200: {
+        description: "Generation request status returned",
+        content: {
+          "application/json": { schema: resolver(generateStatusResponseSchema) },
+        },
+      },
+      404: {
+        description: "Request ID not found",
+        content: {
+          "application/json": { schema: resolver(errorResponseSchema) },
+        },
+      },
+    },
+  }),
+  validator("param", generateStatusParamsSchema),
+  generateStatusRoute,
+);
+
+api_generateStatus.get(
+  "/size",
+  describeRoute({
+    summary: "Get generate queue size",
+    description: "Returns the current pending job count in the generation queue.",
+    responses: {
+      200: {
+        description: "Queue size returned",
+        content: {
+          "application/json": { schema: resolver(queueSizeResponseSchema) },
+        },
+      },
+    },
+  }),
+  queueSizeRoute,
+);
+
 // Save Session Endpoint
-api.post(
-  "/designs/:uuid/save",
+api_design.post(
+  "/:designId/save",
   describeRoute({
     summary: "Save design session to server",
     description: "Serializes and persists an in-memory session design graph to storage.",
@@ -106,7 +161,7 @@ api.post(
         },
       },
       404: {
-        description: "No active session found for the provided UUID",
+        description: "No active session found for the provided Design ID",
         content: {
           "application/json": { schema: resolver(errorResponseSchema) },
         },
@@ -118,8 +173,34 @@ api.post(
 );
 
 // Get Design Endpoint
-api.get(
-  "/designs/:uuid",
+api_design.get(
+  "/:designId/url",
+  describeRoute({
+    summary: "Build frontend URL for a design",
+    description:
+      "Returns a shareable frontend URL for a design. Adds view=readonly when isReadOnly=true is provided.",
+    responses: {
+      200: {
+        description: "Frontend URL generated",
+        content: {
+          "application/json": { schema: resolver(getFrontendUrlResponseSchema) },
+        },
+      },
+      400: {
+        description: "Invalid request parameters",
+        content: {
+          "application/json": { schema: resolver(errorResponseSchema) },
+        },
+      },
+    },
+  }),
+  validator("param", getFrontendUrlParamsSchema),
+  validator("query", getFrontendUrlQuerySchema),
+  getFrontendUrlRoute,
+);
+
+api_design.get(
+  "/:designId",
   describeRoute({
     summary: "Fetch design payload or raw binary file",
     description:
@@ -133,7 +214,7 @@ api.get(
         },
       },
       400: {
-        description: "Invalid UUID parameter",
+        description: "Invalid Design ID parameter",
         content: {
           "application/json": { schema: resolver(errorResponseSchema) },
         },
@@ -152,8 +233,8 @@ api.get(
 );
 
 // Put Design Endpoint (Client-side sync)
-api.put(
-  "/designs/:uuid",
+api_design.put(
+  "/:designId",
   describeRoute({
     summary: "Upload modified design bytes",
     description: "Accepts raw file binary edited client-side and saves it directly into storage.",
@@ -176,7 +257,7 @@ api.put(
         },
       },
       400: {
-        description: "Missing UUID or empty file payload",
+        description: "Missing Design ID or empty file payload",
         content: {
           "application/json": { schema: resolver(errorResponseSchema) },
         },
@@ -188,8 +269,8 @@ api.put(
 );
 
 if (env.ENABLE_OPENAPI_DOCS) {
-  api.get(
-    "/openapi",
+  api_openapi.get(
+    "/",
     openAPIRouteHandler(app, {
       documentation: {
         info: {
@@ -201,10 +282,10 @@ if (env.ENABLE_OPENAPI_DOCS) {
       },
     }),
   );
-  api.get(
-    "/openapi/docs",
+  api_openapi.get(
+    "/docs",
     swaggerUI({
-      url: `/openapi`,
+      url: `/api/v1/openapi`,
     }),
   );
 }

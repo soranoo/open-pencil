@@ -17,21 +17,39 @@ export const generateBodySchema = z.object({
 });
 
 export const generateResponseSchema = z.object({
-  designId: z.string(),
-  summary: z.string(),
-  toolCallCount: z.number(),
-  hitStepLimit: z.boolean(),
-  toolLog: z.array(
-    z.object({
-      tool: z.string(),
-      mutates: z.boolean(),
-    }),
-  ),
+  requestId: z.string(),
+  queuePosition: z.number().int().min(1),
 });
 
-// --- Save Endpoint (POST /designs/:uuid/save) ---
+export const generateStatusParamsSchema = z.object({
+  requestId: z.uuid(),
+});
+
+export const generateStatusResponseSchema = z.object({
+  requestId: z.string(),
+  completed: z.boolean(),
+  queuePosition: z.number().int().min(0).nullable(),
+  failed: z.boolean(),
+  error: z.string().nullable(),
+  result: z
+    .object({
+      designId: z.string(),
+      summary: z.string(),
+      toolCallCount: z.number(),
+      hitStepLimit: z.boolean(),
+      toolLog: z.array(
+        z.object({
+          tool: z.string(),
+          mutates: z.boolean(),
+        }),
+      ),
+    })
+    .nullable(),
+});
+
+// --- Save Endpoint (POST /designs/:designId/save) ---
 export const saveParamsSchema = z.object({
-  uuid: z.string().uuid().or(z.string()),
+  designId: z.uuid(),
 });
 
 export const saveResponseSchema = z.object({
@@ -39,9 +57,9 @@ export const saveResponseSchema = z.object({
   savedBytes: z.number(),
 });
 
-// --- Get Design Endpoint (GET /designs/:uuid) ---
+// --- Get Design Endpoint (GET /designs/:designId) ---
 export const getDesignParamsSchema = z.object({
-  uuid: z.string(),
+  designId: z.uuid(),
 });
 
 export const getDesignQuerySchema = z.object({
@@ -58,12 +76,35 @@ export const getDesignJsonResponseSchema = z.object({
   dataBase64: z.string(),
 });
 
-// --- Put Design Endpoint (PUT /designs/:uuid) ---
+// --- Put Design Endpoint (PUT /designs/:designId) ---
 export const putDesignParamsSchema = z.object({
-  uuid: z.string(),
+  designId: z.uuid(),
 });
 
 export const putDesignResponseSchema = z.object({
   designId: z.string(),
   savedBytes: z.number(),
+});
+
+export const queueSizeResponseSchema = z.object({
+  queue: z.string(),
+  size: z.number().int().min(0),
+});
+
+// --- Frontend URL Endpoint (GET /design/:designId/url) ---
+export const getFrontendUrlParamsSchema = z.object({
+  designId: z.uuid(),
+});
+
+export const getFrontendUrlQuerySchema = z.object({
+  isReadOnly: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
+});
+
+export const getFrontendUrlResponseSchema = z.object({
+  designId: z.string(),
+  isReadOnly: z.boolean(),
+  url: z.string().url(),
 });
