@@ -1,37 +1,64 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
+import type { Storage } from "./interface";
 import { env } from "@/env";
 
-const s3 = new S3Client({
-  endpoint: env.S3_ENDPOINT,
-  region: env.S3_REGION,
-  forcePathStyle: env.S3_FORCE_PATH_STYLE,
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY_ID,
-    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-  },
-});
-
-function objectKey(uuid: string): string {
-  return `designs/${uuid}.fig`;
+function objectKey(designId: string): string {
+  return `designs/${designId}.fig`;
 }
 
-export async function putDesignBytes(uuid: string, bytes: Uint8Array): Promise<void> {
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: objectKey(uuid),
-      Body: bytes,
-      ContentType: "application/octet-stream",
-    }),
-  );
-}
+export class S3Storage implements Storage {
+  private client: S3Client;
 
-export async function getDesignBytes(uuid: string): Promise<Uint8Array> {
-  const result = await s3.send(
-    new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: objectKey(uuid) }),
-  );
-  if (!result.Body) throw new Error(`No object body for design ${uuid}`);
-  const buffer = await result.Body.transformToByteArray();
-  return buffer;
+  constructor({
+    endpoint,
+    region,
+    forcePathStyle,
+    credentials,
+  }: {
+    endpoint: string;
+    region: string;
+    forcePathStyle: boolean;
+    credentials: {
+      accessKeyId: string;
+      secretAccessKey: string;
+    };
+  }) {
+    this.client = new S3Client({
+      endpoint,
+      region,
+      forcePathStyle,
+      credentials,
+    });
+  }
+
+  async put(designId: string, bytes: Uint8Array): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: objectKey(designId),
+        Body: bytes,
+        ContentType: "application/octet-stream",
+      }),
+    );
+  }
+
+  async get(designId: string): Promise<Uint8Array> {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: objectKey(designId) }),
+    );
+    if (!result.Body) throw new Error(`No object body for design ${designId}`);
+    return await result.Body.transformToByteArray();
+  }
+
+  async delete(designId: string): Promise<void> {
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: objectKey(designId) }),
+    );
+  }
 }
