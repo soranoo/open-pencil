@@ -30,6 +30,7 @@ import TabBar from '@/components/TabBar.vue'
 import Tip from '@/components/ui/Tip.vue'
 import Toolbar from '@/components/Toolbar/Toolbar.vue'
 import UnsavedChangesBanner from '@/components/UnsavedChangesBanner.vue'
+import { isReadOnly } from '@/app/automation/view-only-bridge'
 
 const route = useRoute()
 const params = useUrlSearchParams('history')
@@ -184,7 +185,7 @@ onUnmounted(() => {
 
     <!-- Collapsed UI (showUI=false) -->
     <div
-      v-else-if="showChrome"
+      v-else-if="showChrome && !isReadOnly"
       :key="'collapsed-' + activeTab?.id"
       class="flex flex-1 overflow-hidden"
     >

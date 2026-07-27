@@ -30,7 +30,13 @@ const SERVER_SAVE_DEBOUNCE_MS = Number(
 const client = createClient<paths>({
   baseUrl: SERVER_URL,
   bodySerializer(body) {
-    if (body instanceof Blob || body instanceof ArrayBuffer || body instanceof Uint8Array) {
+    const typedBody = body as unknown
+    // Needed to allow client with pure bytes body
+    if (
+      typedBody instanceof Blob ||
+      typedBody instanceof ArrayBuffer ||
+      typedBody instanceof Uint8Array
+    ) {
       return body
     }
 
@@ -70,9 +76,9 @@ async function waitForOpenPencilBridge(timeoutMs = 5000): Promise<void> {
 export async function loadDesignFromServer(designId: string): Promise<void> {
   await waitForOpenPencilBridge()
 
-  const { data, error } = await client.GET('/api/v1/designs/{uuid}', {
+  const { data, error } = await client.GET('/api/v1/design/{designId}', {
     params: {
-      path: { uuid: designId },
+      path: { designId },
       query: { format: 'json' }
     }
   })
@@ -106,13 +112,13 @@ async function saveDesignToServerNow(designId: string): Promise<void> {
     type: 'application/octet-stream'
   })
 
-  const { error } = await client.PUT('/api/v1/designs/{uuid}', {
+  const { error } = await client.PUT('/api/v1/design/{designId}', {
     params: {
       path: {
-        uuid: designId
+        designId
       }
     },
-    body: blob,
+    body: blob as unknown as string,
     headers: {
       'Content-Type': 'application/octet-stream'
     }
@@ -184,23 +190,24 @@ export async function generateDesignOnServer(
   if (genError || !genData) {
     throw new Error(`Generate failed: ${JSON.stringify(genError)}`)
   }
+  throw new Error(`Missing implementaion`)
 
-  const { error: saveError } = await client.POST('/api/v1/designs/{uuid}/save', {
-    params: {
-      path: { uuid: genData.designId }
-    }
-  })
+  // const { error: saveError } = await client.POST('/api/v1/design/{designId}/save', {
+  //   params: {
+  //     path: { designId: genData.designId }
+  //   }
+  // })
 
-  if (saveError) {
-    throw new Error(`Save-after-generate failed: ${JSON.stringify(saveError)}`)
-  }
+  // if (saveError) {
+  //   throw new Error(`Save-after-generate failed: ${JSON.stringify(saveError)}`)
+  // }
 
-  await loadDesignFromServer(genData.designId)
-  activeServerDesignId = genData.designId
-  return {
-    designId: genData.designId,
-    summary: genData.summary
-  }
+  // await loadDesignFromServer(genData.designId)
+  // activeServerDesignId = genData.designId
+  // return {
+  //   designId: genData.designId,
+  //   summary: genData.summary
+  // }
 }
 
 /**

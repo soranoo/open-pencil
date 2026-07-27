@@ -12,6 +12,7 @@ import router from './router'
 // window.openPencilServer.{load,save,generate} and auto-loads ?designId=<uuid> if present.
 // Safe no-op if you never navigate with that query param.
 import { installServerBridgeAutoload, installServerBridgeAutosave } from '@/app/automation/server-bridge'
+import { installViewOnlyBridge } from './app/automation/view-only-bridge'
 
 preloadFonts()
 const head = createHead()
@@ -21,6 +22,7 @@ if (IS_BACKEND_MODE) {
   installServerBridgeAutoload()
   installServerBridgeAutosave()
 }
+installViewOnlyBridge(router)
 
 if (!IS_TAURI) {
   void import('virtual:pwa-register').then(({ registerSW }) => {

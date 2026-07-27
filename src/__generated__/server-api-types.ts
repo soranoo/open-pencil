@@ -44,7 +44,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/designs/{uuid}/save": {
+    "/api/v1/generate/status/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get queued generation request status
+         * @description Returns queue position while pending and completion/failure details once generation has finished.
+         */
+        get: operations["getApiV1GenerateStatusByRequestId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/generate/status/size": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get generate queue size
+         * @description Returns the current pending job count in the generation queue.
+         */
+        get: operations["getApiV1GenerateStatusSize"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/design/{designId}/save": {
         parameters: {
             query?: never;
             header?: never;
@@ -57,14 +97,14 @@ export interface paths {
          * Save design session to server
          * @description Serializes and persists an in-memory session design graph to storage.
          */
-        post: operations["postApiV1DesignsByUuidSave"];
+        post: operations["postApiV1DesignByDesignIdSave"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/designs/{uuid}": {
+    "/api/v1/design/{designId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -75,12 +115,12 @@ export interface paths {
          * Fetch design payload or raw binary file
          * @description Retrieves design data. Returns base64 metadata payload when ?format=json query is provided, or binary file download by default.
          */
-        get: operations["getApiV1DesignsByUuid"];
+        get: operations["getApiV1DesignByDesignId"];
         /**
          * Upload modified design bytes
          * @description Accepts raw file binary edited client-side and saves it directly into storage.
          */
-        put: operations["putApiV1DesignsByUuid"];
+        put: operations["putApiV1DesignByDesignId"];
         post?: never;
         delete?: never;
         options?: never;
@@ -145,14 +185,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        designId: string;
-                        summary: string;
-                        toolCallCount: number;
-                        hitStepLimit: boolean;
-                        toolLog: {
-                            tool: string;
-                            mutates: boolean;
-                        }[];
+                        requestId: string;
+                        queuePosition: number;
                     };
                 };
             };
@@ -180,12 +214,84 @@ export interface operations {
             };
         };
     };
-    postApiV1DesignsByUuidSave: {
+    getApiV1GenerateStatusByRequestId: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                uuid: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generation request status returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requestId: string;
+                        completed: boolean;
+                        queuePosition: number | null;
+                        failed: boolean;
+                        error: string | null;
+                        result: {
+                            designId: string;
+                            summary: string;
+                            toolCallCount: number;
+                            hitStepLimit: boolean;
+                            toolLog: {
+                                tool: string;
+                                mutates: boolean;
+                            }[];
+                        } | null;
+                    };
+                };
+            };
+            /** @description Request ID not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getApiV1GenerateStatusSize: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Queue size returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        queue: string;
+                        size: number;
+                    };
+                };
+            };
+        };
+    };
+    postApiV1DesignByDesignIdSave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
             };
             cookie?: never;
         };
@@ -214,7 +320,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No active session found for the provided UUID */
+            /** @description No active session found for the provided Design ID */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -227,14 +333,14 @@ export interface operations {
             };
         };
     };
-    getApiV1DesignsByUuid: {
+    getApiV1DesignByDesignId: {
         parameters: {
             query?: {
                 format?: "json";
             };
             header?: never;
             path: {
-                uuid: string;
+                designId: string;
             };
             cookie?: never;
         };
@@ -258,7 +364,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Invalid UUID parameter */
+            /** @description Invalid Design ID parameter */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -282,12 +388,12 @@ export interface operations {
             };
         };
     };
-    putApiV1DesignsByUuid: {
+    putApiV1DesignByDesignId: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                uuid: string;
+                designId: string;
             };
             cookie?: never;
         };
@@ -309,7 +415,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing UUID or empty file payload */
+            /** @description Missing Design ID or empty file payload */
             400: {
                 headers: {
                     [name: string]: unknown;
