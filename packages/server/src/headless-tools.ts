@@ -20,7 +20,7 @@ import type { FigmaAPI } from "@open-pencil/core/figma-api";
 import { computeAllLayouts } from "@open-pencil/core/layout";
 import { CORE_TOOLS, toolsToAI } from "@open-pencil/core/tools";
 import type { ToolLogEntry } from "@open-pencil/core/tools";
-import { tool } from "ai";
+import { tool, type ToolSet } from "ai";
 import * as v from "valibot";
 
 export const MAX_AGENT_STEPS = 50;
@@ -38,7 +38,7 @@ export function createRunState(): RunState {
  * Builds the same tool set the in-app chat exposes to the model, bound to a headless
  * FigmaAPI instance instead of a live editor store.
  */
-export function createHeadlessTools(figma: FigmaAPI, runState: RunState) {
+export function createHeadlessTools(figma: FigmaAPI, runState: RunState): ToolSet {
   return toolsToAI(
     CORE_TOOLS,
     {

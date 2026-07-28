@@ -13,21 +13,16 @@
 // Kept identical to upstream: MAX_AGENT_STEPS via stepCountIs, the Anthropic prompt-caching
 // provider option, and the model resolution logic.
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import type { AIProviderID } from "@open-pencil/core";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import type { ModelMessage } from "ai";
 
-import type { DocumentHandle } from "./document.js";
-import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless-tools.js";
-import type { RunState } from "./headless-tools.js";
-import { createLanguageModel, resolveLanguageModelID } from "./model.js";
-import type { ModelConfig } from "./model.js";
-
-const SYSTEM_PROMPT_PATH = fileURLToPath(new URL("./system-prompt.md", import.meta.url));
-const SYSTEM_PROMPT = readFileSync(SYSTEM_PROMPT_PATH, "utf-8");
+import type { DocumentHandle } from "./document";
+import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless-tools";
+import type { RunState } from "./headless-tools";
+import { createLanguageModel, resolveLanguageModelID } from "./model";
+import type { ModelConfig } from "./model";
+import SYSTEM_PROMPT from "./system-prompt.md";
 
 const ANTHROPIC_CACHE_CONTROL = {
   anthropic: { cacheControl: { type: "ephemeral" } },
