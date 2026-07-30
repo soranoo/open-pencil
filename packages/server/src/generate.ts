@@ -1,3 +1,6 @@
+import type { LanguageModelUsage } from "ai";
+import z from "zod";
+
 import { runPrompt } from "@/chat-engine.js";
 import { loadDocument } from "@/document.js";
 import { env } from "@/env.js";
@@ -9,13 +12,38 @@ export interface GenerateRequest {
   designId?: string;
 }
 
-export interface GenerateResponse {
-  designId: string;
-  summary: string;
-  toolCallCount: number;
-  hitStepLimit: boolean;
-  toolLog: Array<{ tool: string; mutates: boolean }>;
-}
+const modelUsageSchema = z.object({
+  inputTokens: z.union([z.number(), z.undefined()]),
+  inputTokenDetails: z.object({
+    noCacheTokens: z.union([z.number(), z.undefined()]),
+    cacheReadTokens: z.union([z.number(), z.undefined()]),
+    cacheWriteTokens: z.union([z.number(), z.undefined()]),
+  }),
+  outputTokens: z.union([z.number(), z.undefined()]),
+  outputTokenDetails: z.object({
+    textTokens: z.union([z.number(), z.undefined()]),
+    reasoningTokens: z.union([z.number(), z.undefined()]),
+  }),
+  totalTokens: z.union([z.number(), z.undefined()]),
+  reasoningTokens: z.number().optional(),
+  cachedInputTokens: z.number().optional(),
+});
+
+const toolLogSchema = z.object({
+  tool: z.string(),
+  mutates: z.boolean(),
+});
+
+export const generateResultSchema = z.object({
+  designId: z.string(),
+  summary: z.string(),
+  toolCallCount: z.number(),
+  hitStepLimit: z.boolean(),
+  toolLog: z.array(toolLogSchema),
+  usage: modelUsageSchema,
+});
+
+export type GenerateResponse = z.infer<typeof generateResultSchema>;
 
 export class DesignNotFoundError extends Error {
   constructor(designId: string) {
@@ -40,24 +68,41 @@ export async function processGenerateRequest(body: GenerateRequest): Promise<Gen
     session = await createSession();
   }
 
-  // const result = await runPrompt(
-  //   session.doc,
-  //   {
-  //     providerID: env.AI_PROVIDER_ID,
-  //     apiKey: env.AI_API_KEY,
-  //     modelID: env.AI_MODEL_ID,
-  //     customBaseURL: env.AI_CUSTOM_BASE_URL,
-  //     customAPIType: env.AI_CUSTOM_API_TYPE,
-  //   },
-  //   body.prompt,
-  //   session.messages,
-  // );
-  const result = {
+  const stubResult = {
     messages: [],
     toolLog: [],
     text: "dev",
     hitStepLimit: false,
+    usage: {} as LanguageModelUsage,
   };
+
+  const result = await runPrompt(
+    session.doc,
+    {
+      providerID: env.AI_PROVIDER_ID,
+      apiKey: env.AI_API_KEY,
+      modelID: env.AI_MODEL_ID,
+      customBaseURL: env.AI_CUSTOM_BASE_URL,
+      customAPIType: env.AI_CUSTOM_API_TYPE,
+    },
+    body.prompt,
+    session.messages,
+  );
+  // const result = env.USE_AI_STUB
+  //   ? stubResult
+  //   : await runPrompt(
+  //       session.doc,
+  //       {
+  //         providerID: env.AI_PROVIDER_ID,
+  //         apiKey: env.AI_API_KEY,
+  //         modelID: env.AI_MODEL_ID,
+  //         customBaseURL: env.AI_CUSTOM_BASE_URL,
+  //         customAPIType: env.AI_CUSTOM_API_TYPE,
+  //       },
+  //       body.prompt,
+  //       session.messages,
+  //     );
+  console.log(result, env.USE_AI_STUB);
 
   session.messages = result.messages;
   await persistSession(session);
@@ -68,5 +113,6 @@ export async function processGenerateRequest(body: GenerateRequest): Promise<Gen
     toolCallCount: result.toolLog.length,
     hitStepLimit: result.hitStepLimit,
     toolLog: result.toolLog.map((entry) => ({ tool: entry.tool, mutates: entry.mutates })),
+    usage: result.usage,
   };
 }

@@ -15,7 +15,7 @@
 
 import type { AIProviderID } from "@open-pencil/core";
 import { ToolLoopAgent, stepCountIs } from "ai";
-import type { ModelMessage } from "ai";
+import type { LanguageModelUsage, ModelMessage } from "ai";
 
 import type { DocumentHandle } from "./document";
 import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless-tools";
@@ -41,6 +41,7 @@ export interface GenerateResult {
   toolLog: RunState["toolLog"];
   text: string;
   hitStepLimit: boolean;
+  usage: LanguageModelUsage;
 }
 
 /**
@@ -64,11 +65,7 @@ export async function runPrompt(
   const agent = new ToolLoopAgent({
     model: createLanguageModel(modelConfig),
     instructions: SYSTEM_PROMPT,
-    // Same bundled-vs-installed `ai` package type-identity gap noted in headless-tools.ts —
-    // `tools` really is a valid ToolSet, TS just sees two different `ToolSet` types because
-    // @open-pencil/core's .d.ts points at its own internal, bundled copy of `ai`.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tools: tools as any,
+    tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     providerOptions: cacheProviderOptions,
   });
@@ -82,5 +79,6 @@ export async function runPrompt(
     toolLog: runState.toolLog,
     text: result.text,
     hitStepLimit: runState.currentSteps >= MAX_AGENT_STEPS,
+    usage: result.usage,
   };
 }
