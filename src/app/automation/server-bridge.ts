@@ -13,15 +13,16 @@
 //       current document to bytes for the "save" direction.
 
 import createClient from 'openapi-fetch'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { exportFigFile } from '@open-pencil/core/io/formats/fig'
 
 import type { paths } from '@/__generated__/server-api-types'
+import { serverReadOnly } from '@/app/automation/view-only-bridge'
 import { useActiveEditorStoreRef } from '@/app/editor/active-store'
+import { fadeOutGlobalLoader } from '@/app/editor/canvas/loader-overlay'
+import { openFileInNewTab } from '@/app/tabs'
 import { IS_BACKEND_MODE } from '@/constants'
-
-import { openFileInNewTab } from '../tabs'
 
 const SERVER_URL = import.meta.env.VITE_OPENPENCIL_SERVER_URL ?? 'http://localhost:8787'
 const SERVER_SAVE_DEBOUNCE_MS = Number(
@@ -51,6 +52,32 @@ const pendingSaveRequests = new Map<
   Array<{ resolve: () => void; reject: (error: unknown) => void }>
 >()
 let installedServerAutosave = false
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+type DesignAuthStatus = 'idle' | 'authenticating' | 'authenticated' | 'unauth'
+
+interface DesignAuthSuccess {
+  authenticated: true
+  designId: string
+  permission: 'read' | 'write'
+  refreshIntervalMs: number
+  cookieExpiresAt: number
+  source: 'cookie' | 'signed-url'
+}
+
+interface DesignJsonPayload {
+  designId: string
+  metadata: {
+    id: string
+    promptHistory: unknown[]
+    s3Key: string
+  }
+  dataBase64: string
+}
+
+export const designAuthStatus = ref<DesignAuthStatus>('idle')
+export const designAuthError = ref<string | null>(null)
+export const designPermission = ref<'read' | 'write'>('read')
 
 function resolveDesignId(designId?: string): string {
   const resolved = designId ?? activeServerDesignId
@@ -60,6 +87,101 @@ function resolveDesignId(designId?: string): string {
     )
   }
   return resolved
+}
+
+function getSignedDesignQuery(designId: string): URLSearchParams | null {
+  const params = new URLSearchParams(location.search)
+  if (params.get('design') !== designId) {
+    return null
+  }
+  if (!params.get('key') || !params.get('expiry') || !params.get('sign')) {
+    return null
+  }
+  return params
+}
+
+function stopCookieRefreshTimer(): void {
+  if (!refreshTimer) return
+  clearInterval(refreshTimer)
+  refreshTimer = null
+}
+
+async function requestDesignIframeAuth(designId: string): Promise<DesignAuthSuccess> {
+  const query = getSignedDesignQuery(designId)
+  const authUrl = new URL(`${SERVER_URL}/api/v1/design/${designId}/auth`)
+  if (query) {
+    for (const key of ['design', 'key', 'expiry', 'permission', 'sign']) {
+      const value = query.get(key)
+      if (value) authUrl.searchParams.set(key, value)
+    }
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15_000)
+
+  try {
+    const response = await fetch(authUrl, {
+      credentials: 'include',
+      signal: controller.signal
+    })
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as { error?: string } | null
+      throw new Error(errorBody?.error ?? `Design auth failed with ${response.status}`)
+    }
+
+    return (await response.json()) as DesignAuthSuccess
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function updateReadOnlyFromPermission(permission: 'read' | 'write'): void {
+  designPermission.value = permission
+  serverReadOnly.value = permission !== 'write'
+}
+
+function startCookieRefreshTimer(designId: string, refreshIntervalMs: number): void {
+  stopCookieRefreshTimer()
+  if (!getSignedDesignQuery(designId)) {
+    return
+  }
+
+  refreshTimer = setInterval(
+    () => {
+      void ensureDesignIframeAuth(designId, { silent: true }).catch((error) => {
+        console.error('[server-bridge] failed to refresh design cookie:', error)
+      })
+    },
+    Math.max(60_000, refreshIntervalMs)
+  )
+}
+
+export async function ensureDesignIframeAuth(
+  designId: string,
+  options?: { silent?: boolean }
+): Promise<DesignAuthSuccess> {
+  console.error({ options })
+  if (!options?.silent) {
+    designAuthStatus.value = 'authenticating'
+    designAuthError.value = null
+  }
+
+  try {
+    const auth = await requestDesignIframeAuth(designId)
+    updateReadOnlyFromPermission(auth.permission)
+    designAuthStatus.value = 'authenticated'
+    designAuthError.value = null
+    startCookieRefreshTimer(designId, auth.refreshIntervalMs)
+    return auth
+  } catch (error) {
+    stopCookieRefreshTimer()
+    serverReadOnly.value = true
+    designAuthStatus.value = 'unauth'
+    designAuthError.value =
+      error instanceof Error ? error.message : 'Unauthorized design access'
+    fadeOutGlobalLoader()
+    throw error
+  }
 }
 
 async function waitForOpenPencilBridge(timeoutMs = 5000): Promise<void> {
@@ -75,17 +197,33 @@ async function waitForOpenPencilBridge(timeoutMs = 5000): Promise<void> {
 /** Loads a design previously saved on the server into a new tab. */
 export async function loadDesignFromServer(designId: string): Promise<void> {
   await waitForOpenPencilBridge()
+  await ensureDesignIframeAuth(designId)
 
-  const { data, error } = await client.GET('/api/v1/design/{designId}', {
-    params: {
-      path: { designId },
-      query: { format: 'json' }
-    }
-  })
+  const fetchController = new AbortController()
+  const fetchTimeout = setTimeout(() => fetchController.abort(), 30_000)
 
-  if (error || !data) {
-    throw new Error(`Load failed: ${JSON.stringify(error ?? 'No data returned')}`)
+  let response: Response
+  try {
+    response = await fetch(`${SERVER_URL}/api/v1/design/${designId}?format=json`, {
+      credentials: 'include',
+      signal: fetchController.signal
+    })
+  } catch (err) {
+    clearTimeout(fetchTimeout)
+    designAuthStatus.value = 'unauth'
+    designAuthError.value = err instanceof Error ? err.message : 'Failed to load design data'
+    throw err
   }
+  clearTimeout(fetchTimeout)
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null
+    designAuthStatus.value = 'unauth'
+    designAuthError.value = errorBody?.error ?? `Load failed with ${response.status}`
+    throw new Error(errorBody?.error ?? `Load failed with ${response.status}`)
+  }
+
+  const data = (await response.json()) as DesignJsonPayload
 
   const binaryString = atob(data.dataBase64)
   const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
@@ -101,6 +239,9 @@ export async function loadDesignFromServer(designId: string): Promise<void> {
 /** Pushes the current tab's document bytes to the server, creating or overwriting `designId`. */
 async function saveDesignToServerNow(designId: string): Promise<void> {
   await waitForOpenPencilBridge()
+  if (designPermission.value !== 'write') {
+    throw new Error('This signed design URL does not allow saving changes')
+  }
   const store = window.openPencil?.getStore?.()
   if (!store) {
     throw new Error('window.openPencil.getStore() returned null or undefined')
@@ -112,20 +253,18 @@ async function saveDesignToServerNow(designId: string): Promise<void> {
     type: 'application/octet-stream'
   })
 
-  const { error } = await client.PUT('/api/v1/design/{designId}', {
-    params: {
-      path: {
-        designId
-      }
-    },
-    body: blob as unknown as string,
+  const response = await fetch(`${SERVER_URL}/api/v1/design/${designId}`, {
+    method: 'PUT',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/octet-stream'
-    }
+    },
+    body: blob
   })
 
-  if (error) {
-    throw new Error(`Save failed: ${JSON.stringify(error)}`)
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(errorBody?.error ?? `Save failed with ${response.status}`)
   }
 }
 
@@ -254,8 +393,11 @@ export function installServerBridgeAutoload(): void {
     return
   }
   activeServerDesignId = designId
+  designAuthStatus.value = 'authenticating'
   void loadDesignFromServer(designId).catch((err) => {
     console.error('[server-bridge] failed to autoload design from ?designId=', err)
+    designAuthStatus.value = 'unauth'
+    designAuthError.value = err instanceof Error ? err.message : 'Failed to load design'
   })
 }
 

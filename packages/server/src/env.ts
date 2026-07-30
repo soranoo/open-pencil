@@ -5,6 +5,7 @@ import z from "zod";
 export const env = createEnv({
   server: {
     PORT: z.coerce.number().min(1).default(8787),
+    USE_AI_STUB: z.coerce.boolean().default(false),
 
     AI_PROVIDER_ID: z.enum([
       "openrouter",
@@ -51,6 +52,11 @@ export const env = createEnv({
     KV_PROVIDER: z.enum(["memory", "fs", "redis"]).default("memory"),
     REDIS_URL: z.url().optional(),
     SESSION_TTL_MINUTES: z.coerce.number().min(1).default(30),
+    SERVER_API_KEY: z.string().min(1),
+    DESIGN_SIGNING_SECRET: z.string().min(1),
+    DESIGN_FIRST_ACCESS_TTL_MINUTES: z.coerce.number().min(1).default(300),
+    DESIGN_COOKIE_TTL_MINUTES: z.coerce.number().min(1).default(60),
+    DESIGN_COOKIE_REFRESH_INTERVAL_MINUTES: z.coerce.number().min(1).default(15),
 
     QUEUE_PROVIDER: z.enum(["memory", "fs", "amqp"]).default("memory"),
     AMQP_URL: z.url().optional(),

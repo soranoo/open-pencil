@@ -17,7 +17,7 @@ import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { createDemoShapes } from '@/app/demo/document'
 import { useEditorStore } from '@/app/editor/active-store'
 import { createTab, activeTab, getActiveStore, tabCount } from '@/app/tabs'
-import { IS_DISABLE_COLLABORATION } from '@/constants'
+import { IS_BACKEND_MODE, IS_DISABLE_COLLABORATION } from '@/constants'
 
 import CollabPanel from '@/components/CollabPanel/CollabPanel.vue'
 import EditorCanvas from '@/components/EditorCanvas.vue'
@@ -31,6 +31,7 @@ import Tip from '@/components/ui/Tip.vue'
 import Toolbar from '@/components/Toolbar/Toolbar.vue'
 import UnsavedChangesBanner from '@/components/UnsavedChangesBanner.vue'
 import { isReadOnly } from '@/app/automation/view-only-bridge'
+import { designAuthError, designAuthStatus } from '@/app/automation/server-bridge'
 
 const route = useRoute()
 const params = useUrlSearchParams('history')
@@ -116,6 +117,24 @@ onUnmounted(() => {
 
 <template>
   <div data-test-id="editor-root" class="flex h-screen w-screen flex-col">
+    <div
+      v-if="IS_BACKEND_MODE && designAuthStatus === 'authenticating'"
+      class="flex flex-1 items-center justify-center bg-canvas px-6 text-center text-sm text-muted"
+    >
+      Authenticating design access...
+    </div>
+    <div
+      v-else-if="IS_BACKEND_MODE && designAuthStatus === 'unauth'"
+      class="flex flex-1 items-center justify-center bg-canvas px-6 text-center"
+    >
+      <div class="max-w-md rounded-xl border border-border bg-panel px-6 py-5 shadow-sm">
+        <h1 class="text-base font-medium text-surface">Design access unavailable</h1>
+        <p class="mt-2 text-sm text-muted">
+          {{ Boolean(designAuthError) ? 'This design link is invalid, already used, or expired.' : '' }}
+        </p>
+      </div>
+    </div>
+    <template v-else>
     <SafariBanner />
     <UnsavedChangesBanner />
     <TabBar />
@@ -222,5 +241,6 @@ onUnmounted(() => {
         <EditorCanvas />
       </div>
     </div>
+    </template>
   </div>
 </template>

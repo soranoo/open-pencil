@@ -4,7 +4,9 @@ import { Hono } from "hono";
 import { describeRoute, openAPIRouteHandler, resolver, validator } from "hono-openapi";
 import { cors } from "hono/cors";
 
+import { requireServerApiKey } from "@/auth/api-key.js";
 import { env } from "@/env";
+import { designAuthRoute } from "@/routes/design-auth.js";
 import { getFrontendUrlRoute } from "@/routes/frontend-url.js";
 import { generateStatusRoute } from "@/routes/generate-status.js";
 import { generateRoute } from "@/routes/generate.js";
@@ -14,6 +16,9 @@ import { queueSizeRoute } from "@/routes/queue-size.js";
 import { saveRoute } from "@/routes/save.js";
 import {
   errorResponseSchema,
+  designAuthParamsSchema,
+  designAuthQuerySchema,
+  designAuthResponseSchema,
   generateBodySchema,
   generateResponseSchema,
   generateStatusParamsSchema,
@@ -40,6 +45,7 @@ app.use(
   cors({
     origin: env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "PUT"],
+    credentials: true,
   }),
 );
 
@@ -48,6 +54,8 @@ const api_generate = api.basePath("/generate");
 const api_generateStatus = api_generate.basePath("/status");
 const api_design = api.basePath("/design");
 const api_openapi = api.basePath("/openapi");
+
+api_generate.use("*", requireServerApiKey);
 
 // Health Check
 api.get(
@@ -174,11 +182,43 @@ api_design.post(
 
 // Get Design Endpoint
 api_design.get(
+  "/:designId/auth",
+  describeRoute({
+    summary: "Authenticate frontend design access",
+    description:
+      "Validates the signed design query on first load or refreshes an existing design cookie on subsequent loads.",
+    responses: {
+      200: {
+        description: "Design access authenticated",
+        content: {
+          "application/json": { schema: resolver(designAuthResponseSchema) },
+        },
+      },
+      400: {
+        description: "Invalid Design ID parameter",
+        content: {
+          "application/json": { schema: resolver(errorResponseSchema) },
+        },
+      },
+      401: {
+        description: "Signed URL invalid, expired, or cookie missing",
+        content: {
+          "application/json": { schema: resolver(errorResponseSchema) },
+        },
+      },
+    },
+  }),
+  validator("param", designAuthParamsSchema),
+  validator("query", designAuthQuerySchema),
+  designAuthRoute,
+);
+
+api_design.get(
   "/:designId/url",
   describeRoute({
     summary: "Build frontend URL for a design",
     description:
-      "Returns a shareable frontend URL for a design. Adds view=readonly when isReadOnly=true is provided.",
+      "Returns a signed frontend URL for a design. Read access is the default, and write access enables client saves.",
     responses: {
       200: {
         description: "Frontend URL generated",
@@ -194,6 +234,7 @@ api_design.get(
       },
     },
   }),
+  requireServerApiKey,
   validator("param", getFrontendUrlParamsSchema),
   validator("query", getFrontendUrlQuerySchema),
   getFrontendUrlRoute,

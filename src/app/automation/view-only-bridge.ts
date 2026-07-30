@@ -11,6 +11,7 @@ type Patched = {
 }
 
 export const isReadOnly = ref(false)
+export const serverReadOnly = ref(false)
 
 /**
  * Install a view-only UI "bridge" that toggles read-only behavior based on the
@@ -35,12 +36,6 @@ export function installViewOnlyBridge(router: Router) {
     'exportSelection'
     // you can add: 'createShape', 'importDOMText', 'openFigFile' etc if needed
   ]
-
-  function isReadOnlyRoute(routeRef: Ref<any>) {
-    const q = routeRef.value?.query?.view
-    console.log(q, typeof q === 'string' && q === 'readonly')
-    return typeof q === 'string' && q === 'readonly'
-  }
 
   function applyReadOnlyToStore(store: AnyStore, enable: boolean) {
     if (!store) return
@@ -132,10 +127,9 @@ export function installViewOnlyBridge(router: Router) {
         return
       }
       activeStore = next as AnyStore
-      
+
       // If route currently requests readonly, apply it now
-      const currentRoute = router.currentRoute
-      if (isReadOnlyRoute(currentRoute)) {
+      if (serverReadOnly.value) {
         applyReadOnlyToStore(activeStore, true)
       } else {
         applyReadOnlyToStore(activeStore, false)
@@ -148,7 +142,7 @@ export function installViewOnlyBridge(router: Router) {
   watch(
     () => router.currentRoute,
     (routeRef) => {
-      const want = isReadOnlyRoute(routeRef)
+      const want = serverReadOnly.value
       if (activeStore) {
         applyReadOnlyToStore(activeStore, want)
       } else {
@@ -157,5 +151,18 @@ export function installViewOnlyBridge(router: Router) {
       }
     },
     { immediate: true, deep: true }
+  )
+
+  watch(
+    serverReadOnly,
+    (want) => {
+      const nextReadOnly = want
+      if (activeStore) {
+        applyReadOnlyToStore(activeStore, nextReadOnly)
+      } else {
+        isReadOnly.value = nextReadOnly
+      }
+    },
+    { immediate: true }
   )
 }

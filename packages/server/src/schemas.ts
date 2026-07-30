@@ -1,9 +1,13 @@
 import z from "zod";
 
+import { generateResultSchema } from "./generate";
+
 // --- Base Error Schema ---
 export const errorResponseSchema = z.object({
   error: z.string(),
 });
+
+export const designPermissionSchema = z.enum(["read", "write"]);
 
 // --- Health Check ---
 export const healthCheckResponseSchema = z.object({
@@ -31,20 +35,7 @@ export const generateStatusResponseSchema = z.object({
   queuePosition: z.number().int().min(0).nullable(),
   failed: z.boolean(),
   error: z.string().nullable(),
-  result: z
-    .object({
-      designId: z.string(),
-      summary: z.string(),
-      toolCallCount: z.number(),
-      hitStepLimit: z.boolean(),
-      toolLog: z.array(
-        z.object({
-          tool: z.string(),
-          mutates: z.boolean(),
-        }),
-      ),
-    })
-    .nullable(),
+  result: generateResultSchema.nullable(),
 });
 
 // --- Save Endpoint (POST /designs/:designId/save) ---
@@ -97,14 +88,32 @@ export const getFrontendUrlParamsSchema = z.object({
 });
 
 export const getFrontendUrlQuerySchema = z.object({
-  isReadOnly: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true")
-    .optional(),
+  permission: designPermissionSchema.optional(),
 });
 
 export const getFrontendUrlResponseSchema = z.object({
   designId: z.string(),
-  isReadOnly: z.boolean(),
-  url: z.string().url(),
+  permission: designPermissionSchema,
+  url: z.url(),
+});
+
+export const designAuthParamsSchema = z.object({
+  designId: z.uuid(),
+});
+
+export const designAuthQuerySchema = z.object({
+  design: z.uuid().optional(),
+  key: z.string().min(1).optional(),
+  expiry: z.string().optional(),
+  permission: designPermissionSchema.optional(),
+  sign: z.string().min(1).optional(),
+});
+
+export const designAuthResponseSchema = z.object({
+  authenticated: z.literal(true),
+  designId: z.string(),
+  permission: designPermissionSchema,
+  refreshIntervalMs: z.number().int().min(1),
+  cookieExpiresAt: z.number().int().min(1),
+  source: z.enum(["cookie", "signed-url"]),
 });

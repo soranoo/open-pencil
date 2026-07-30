@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/design/{designId}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Build frontend URL for a design
+         * @description Returns a signed frontend URL for a design. Read access is the default, and write access enables client saves.
+         */
+        get: operations["getApiV1DesignByDesignIdUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/design/{designId}": {
         parameters: {
             query?: never;
@@ -246,6 +266,22 @@ export interface operations {
                                 tool: string;
                                 mutates: boolean;
                             }[];
+                            usage: {
+                                inputTokens: number | unknown;
+                                inputTokenDetails: {
+                                    noCacheTokens: number | unknown;
+                                    cacheReadTokens: number | unknown;
+                                    cacheWriteTokens: number | unknown;
+                                };
+                                outputTokens: number | unknown;
+                                outputTokenDetails: {
+                                    textTokens: number | unknown;
+                                    reasoningTokens: number | unknown;
+                                };
+                                totalTokens: number | unknown;
+                                reasoningTokens?: number;
+                                cachedInputTokens?: number;
+                            };
                         } | null;
                     };
                 };
@@ -333,10 +369,56 @@ export interface operations {
             };
         };
     };
+    getApiV1DesignByDesignIdUrl: {
+        parameters: {
+            query?: {
+                permission?: "read" | "write";
+            };
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frontend URL generated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        designId: string;
+                        /** @enum {string} */
+                        permission: "read" | "write";
+                        /** Format: uri */
+                        url: string;
+                    };
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     getApiV1DesignByDesignId: {
         parameters: {
             query?: {
                 format?: "json";
+                design?: string;
+                key?: string;
+                expiry?: string;
+                permission?: "read" | "write";
+                sign?: string;
             };
             header?: never;
             path: {
@@ -366,6 +448,28 @@ export interface operations {
             };
             /** @description Invalid Design ID parameter */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Signed URL invalid, expired, already used, or cookie missing */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Design access does not allow this action */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

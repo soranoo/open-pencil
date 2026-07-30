@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 
 import { getDb } from "@/db/index.js";
+import { requireDesignAccess } from "@/design-auth.js";
 import { loadDocument } from "@/document.js";
 import { markSaved } from "@/session-manager.js";
 import { getStorage } from "@/storage/index.js";
@@ -15,6 +16,11 @@ export async function putDesignRoute(c: Context) {
   const { designId } = c.req.param();
   if (!designId) {
     return c.json({ error: "designId is required" }, 400);
+  }
+
+  const access = await requireDesignAccess(c, designId, "write");
+  if (access instanceof Response) {
+    return access;
   }
 
   const bytes = await c.req.arrayBuffer();
