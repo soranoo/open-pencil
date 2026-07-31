@@ -18,6 +18,7 @@ export const healthCheckResponseSchema = z.object({
 export const generateBodySchema = z.object({
   prompt: z.string().min(1, "Prompt is required"),
   designId: z.string().optional(),
+  autosave: z.boolean().optional(),
 });
 
 export const generateResponseSchema = z.object({
@@ -34,6 +35,7 @@ export const generateStatusResponseSchema = z.object({
   completed: z.boolean(),
   queuePosition: z.number().int().min(0).nullable(),
   failed: z.boolean(),
+  saved: z.boolean(),
   error: z.string().nullable(),
   result: generateResultSchema.nullable(),
 });

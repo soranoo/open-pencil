@@ -10,6 +10,7 @@ import { getStorage } from "@/storage/index.js";
 export interface GenerateRequest {
   prompt: string;
   designId?: string;
+  autosave?: boolean;
 }
 
 const modelUsageSchema = z.object({
@@ -76,35 +77,23 @@ export async function processGenerateRequest(body: GenerateRequest): Promise<Gen
     usage: {} as LanguageModelUsage,
   };
 
-  const result = await runPrompt(
-    session.doc,
-    {
-      providerID: env.AI_PROVIDER_ID,
-      apiKey: env.AI_API_KEY,
-      modelID: env.AI_MODEL_ID,
-      customBaseURL: env.AI_CUSTOM_BASE_URL,
-      customAPIType: env.AI_CUSTOM_API_TYPE,
-    },
-    body.prompt,
-    session.messages,
-  );
-  // const result = env.USE_AI_STUB
-  //   ? stubResult
-  //   : await runPrompt(
-  //       session.doc,
-  //       {
-  //         providerID: env.AI_PROVIDER_ID,
-  //         apiKey: env.AI_API_KEY,
-  //         modelID: env.AI_MODEL_ID,
-  //         customBaseURL: env.AI_CUSTOM_BASE_URL,
-  //         customAPIType: env.AI_CUSTOM_API_TYPE,
-  //       },
-  //       body.prompt,
-  //       session.messages,
-  //     );
-  console.log(result, env.USE_AI_STUB);
+  const result = env.USE_AI_STUB
+    ? stubResult
+    : await runPrompt(
+        session.doc,
+        {
+          providerID: env.AI_PROVIDER_ID,
+          apiKey: env.AI_API_KEY,
+          modelID: env.AI_MODEL_ID,
+          customBaseURL: env.AI_CUSTOM_BASE_URL,
+          customAPIType: env.AI_CUSTOM_API_TYPE,
+        },
+        body.prompt,
+        session.messages,
+      );
 
   session.messages = result.messages;
+  session.savedAt = null;
   await persistSession(session);
 
   return {

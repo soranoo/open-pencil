@@ -2,6 +2,7 @@
 
 import { getMessageQueue } from "./index.js";
 import type { QueueDelivery } from "./interface.js";
+import { isDesignSaved, saveDesignSession } from "@/design-save.js";
 import { env } from "@/env.js";
 import { processGenerateRequest, type GenerateRequest, type GenerateResponse } from "@/generate.js";
 import { getUuid } from "@/utils/get-uuid.js";
@@ -22,6 +23,7 @@ export interface GenerateRequestStatus {
   completed: boolean;
   queuePosition: number | null;
   failed: boolean;
+  saved: boolean;
   error: string | null;
   result: GenerateResponse | null;
 }
@@ -48,6 +50,7 @@ export async function enqueueGenerateRequest(
     completed: false,
     queuePosition: null,
     failed: false,
+    saved: false,
     error: null,
     result: null,
     processing: false,
@@ -81,6 +84,7 @@ export async function getGenerateRequestStatus(
     completed: status.completed,
     queuePosition: status.queuePosition,
     failed: status.failed,
+    saved: await getSavedStatus(status),
     error: status.error,
     result: status.result,
   };
@@ -115,8 +119,20 @@ async function processGenerateDelivery(
 
   try {
     const response = await processGenerateRequest(delivery.payload);
+    let saved = false;
+    let completionError: string | null = null;
+
+    if (delivery.payload.autosave) {
+      try {
+        await saveDesignSession(response.designId);
+        saved = true;
+      } catch (error) {
+        completionError = error instanceof Error ? `Autosave failed: ${error.message}` : "Autosave failed";
+      }
+    }
+
     await delivery.ack();
-    markCompleted(delivery.payload.requestId, response);
+    markCompleted(delivery.payload.requestId, response, saved, completionError);
   } catch (error) {
     await delivery.reject(false);
     const message = error instanceof Error ? error.message : "Generation failed";
@@ -134,7 +150,12 @@ function markProcessing(requestId: string): void {
   removeFromQueued(requestId);
 }
 
-function markCompleted(requestId: string, result: GenerateResponse): void {
+function markCompleted(
+  requestId: string,
+  result: GenerateResponse,
+  saved: boolean,
+  error: string | null,
+): void {
   const status = requestStatuses.get(requestId);
   if (!status) {
     return;
@@ -143,7 +164,8 @@ function markCompleted(requestId: string, result: GenerateResponse): void {
   status.completed = true;
   status.queuePosition = null;
   status.failed = false;
-  status.error = null;
+  status.saved = saved;
+  status.error = error;
   status.result = result;
 }
 
@@ -156,7 +178,23 @@ function markFailed(requestId: string, error: string): void {
   status.completed = true;
   status.queuePosition = null;
   status.failed = true;
+  status.saved = false;
   status.error = error;
+  status.result = null;
+}
+
+async function getSavedStatus(status: InternalGenerateRequestStatus): Promise<boolean> {
+  if (status.saved) {
+    return true;
+  }
+  const designId = status.result?.designId;
+  if (!designId) {
+    return false;
+  }
+
+  const saved = await isDesignSaved(designId);
+  status.saved = saved;
+  return saved;
 }
 
 function removeFromQueued(requestId: string): void {
