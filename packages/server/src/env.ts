@@ -5,7 +5,10 @@ import z from "zod";
 export const env = createEnv({
   server: {
     PORT: z.coerce.number().min(1).default(8787),
-    USE_AI_STUB: z.coerce.boolean().default(false),
+    USE_AI_STUB: z
+      .string()
+      .transform((v) => v.toLowerCase() === "true")
+      .default(false),
 
     AI_PROVIDER_ID: z.enum([
       "openrouter",

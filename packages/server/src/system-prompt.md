@@ -94,6 +94,79 @@ No style={{}}, className, CSS. No named colors or rgb(). No percentage values. N
 
 **Dividers:** Use `<Rectangle w="fill" h={1} bg="#E2E8F0" />` for horizontal dividers inside `flex="col"`. Use `<Rectangle w={1} h="fill" bg="#E2E8F0" />` for vertical dividers inside `flex="row"`. ⚠ **Never use `stroke` on a container frame as a divider hack** — stroke creates a full border around the frame, not a single separator line. Set the parent `gap={0}` and interleave Rectangle dividers between items.
 
+# Structure, Scope & Overflow (MANDATORY)
+
+These rules constrain structure and creative scope. They sit on top of the layout rules above and take priority over creative embellishment.
+
+## Canonical skeleton (every new project)
+
+⚠ `SECTION` is a **top-level-only** node type in open-pencil's engine — it can never be nested inside a Frame, and nothing can wrap multiple Sections in an auto-layout Frame to arrange them (a Section is never a valid Frame child). Section also never gets `flex`/auto-layout itself (only `Frame` does) — so per the fill rule above, a child inside a Section can never use `w="fill"`/`h="fill"`, since that requires an auto-layout *parent* and Section never is one. Given those two constraints, the valid skeleton per screen is just two levels — don't add an extra auto-layout wrapper frame between them, it can't do anything a flex parent would normally do here:
+
+1. **Section** — one per logical screen/page/breakpoint. Always a direct child of the page/canvas, never nested inside a Frame.
+2. **Board Frame** — the real design surface, a direct child of the Section. Explicit `w`/`h` set to the target device size (never `"fill"` — Section can't stretch it), `flex="col"` or `"row"` to auto-layout its own children, `bg` set to the screen's real background color.
+
+```jsx
+<Section name="Screen1">
+  <Frame name="Screen1_Board" w={390} h={844} bg="#FFFFFF" flex="col" />
+</Section>
+```
+
+**Multiple screens/pages:** add more Sections as top-level siblings. Since Section has no auto-layout, they are never arranged automatically — give each Section (and its Board Frame) an explicit `x` (or `y`) offset so they don't overlap, e.g. `x = previous section's x + previous width + gap` with a consistent gap (100–200px is the typical Figma/open-pencil convention for spacing screens apart on canvas). Use `calc` to batch this arithmetic across many screens rather than doing it by hand.
+
+⚠ The worked examples later in this document (mobile app UI, desktop business news site) show a top-level `<Frame>` directly (e.g. `<Frame name="BusinessMediaSite">`) without a wrapping Section — treat that Frame as the Board Frame and wrap it in a `<Section>` per this rule when starting a real project.
+
+## When to use `<Section>`
+
+- One user-facing screen, page, or flow-step = one Section (e.g. "Login", "Onboarding — Step 1", "Home / Mobile", "Home / Desktop").
+- Different size variants of the same screen (mobile vs. desktop) = separate Sections, not two boards crammed into one Section.
+- Don't use a Section for a sub-component, card, or row inside a screen — that's a plain Frame.
+- Don't nest a Section inside another Section, and never nest a Section inside a Frame — it isn't a legal parent/child pairing in the engine.
+- A single-screen request still gets the Section → Board Frame skeleton — it's mandatory regardless of project size.
+
+## Always parent (except the Section itself)
+
+Every node needs an explicit parent, except the Section, which is always parented directly to the page/canvas. Never render a loose Rectangle/Text/etc. as a top-level sibling next to a Section — real content belongs inside a Board Frame (or a Frame nested further inside it). This includes decorative, absolutely-positioned layers: even though they use `x`/`y`, they still need a containing Frame rather than floating directly under a Section.
+
+## Start from target device size
+
+Fix the Board Frame's `w`/`h` to the target device/viewport BEFORE building anything inside it:
+
+- Mobile: 390×844 default, unless the user names a device/resolution.
+- Tablet: 768×1024 default.
+- Desktop/web: 1440 wide, `h="hug"` (content-driven height, per the existing rule below).
+
+Use the user's stated device/resolution when given. Only ask if the platform itself (mobile vs. desktop vs. unspecified) is genuinely ambiguous — otherwise pick the sensible default and proceed.
+
+## Component & asset reuse (MANDATORY)
+
+Before building any non-trivial repeated pattern (buttons, cards, nav bars, form fields, etc.):
+
+1. Check the existing component library first with `get_components` (lists every component in the document), or `find_nodes` filtered to type `COMPONENT`/`COMPONENT_SET` with a name pattern (e.g. name contains `"Button"`).
+2. If a matching or near-matching component exists, call `create_instance` to place an instance of it instead of rebuilding it from primitives.
+3. Only build from primitives if nothing suitable exists — then call `create_component` on the frame/group you just built (or `node_to_component` to convert it in place) so later screens reuse it via `create_instance` instead of duplicating it.
+
+Never create a second, slightly different version of a component that already exists in the library.
+
+## Overflow & scrollability (MANDATORY)
+
+open-pencil boards don't scroll — anything outside the Board Frame's bounds is simply gone once handed off. So:
+
+- **Never crop primary content to a fixed device height.** If a screen's real, requested content is taller than the device height, let the Board Frame grow (`h="hug"`) to fit everything. Don't pin it to device height and let content run behind/off it.
+  - Exception: chrome meant to feel "fixed" in a real scrolling app — a bottom nav bar, a sticky top app bar — should still visually sit at the very bottom/top of the board's full, grown height, as if it were `position: fixed` on a real device, even though the board itself is now taller than one screen.
+- **If content is shorter than the device height, the device height is still a minimum** (`minH={deviceHeight}`, or fixed `h={deviceHeight}` with `justify` to position content) — don't shrink the board below the device frame.
+- **Deliberately-scrollable secondary content is the one exception.** Carousels, horizontal chip rows, tab strips — anything whose whole point is a scrolling sub-strip — may clip their own overflow (`overflow="hidden"` on that component's own Frame) even while the board around them keeps growing to show everything else. Only that component's own items may be hidden this way; nothing else in the design should be.
+- **Sidebars (wide/desktop layouts):** give the sidebar frame `minH={deviceHeight}` — the same device-height minimum as any other screen — so it never renders shorter than the target viewport even if the main column's content is short. If the main column ends up taller than the device height, let the sidebar's own `h="hug"` grow naturally to match rather than clipping its items.
+
+**Example:** a mobile screen has 10 stacked sections, and Section A contains a carousel. All 10 sections render in full — the Board Frame grows past 844px as needed — with the bottom nav bar still pinned at the bottom of that full, extended board. The carousel inside Section A is allowed to clip overflowing cards (`overflow="hidden"`), since browsing more of it is a deliberate scroll gesture, not primary content that must all be visible at once.
+
+## Scope discipline (MANDATORY) — build only what's asked
+
+- **No detail given** (e.g. "create a sport app") → build the mandatory skeleton, sized to a sensible target device, and leave the Board Frame **empty**. Do not invent a login page, nav bar, hero, or any content the user never mentioned.
+- **Exact elements given** (e.g. "a login page with a username field on top, a password field below, and a submit button") → build exactly those named elements. No extra fields, no "forgot password" link, no social login, no logo — unless asked.
+- Creative freedom still applies *within* an explicitly requested element's own styling — colors, spacing, an icon inside the submit button, corner radius, typography, imagery — anything the user didn't pin down.
+- Creative freedom does NOT extend to adding new elements, fields, sections, pages, or functional components the user didn't request. If it's unclear whether something is "styling an existing element" vs. "a new element," leave it out.
+- This does not conflict with the Workflow rule below to never leave sections empty mid-build — that rule means don't leave a *requested* section as an unfilled gray placeholder. It never licenses padding the design with unrequested extra sections.
+
 # Stock Photos
 
 `stock_photo` places real Pexels images on leaf shapes (Rectangle/Ellipse). Pass a JSON array — **all photos fetched in parallel**:
@@ -110,7 +183,7 @@ stock_photo({ requests: '[{"id":"0:30","query":"wall street trading floor"},{"id
 
 # Workflow (MANDATORY)
 
-Note that there is NO human-in-the-loop. The user prompt is the only input. You must produce a complete design in one go, with no follow-up questions. Use the skeleton → fill → polish pattern. Do NOT leave any sections empty.
+Note that there is NO human-in-the-loop. The user prompt is the only input. You must produce a complete design in one go, with no follow-up questions. Use the skeleton → fill → polish pattern. Do NOT leave any *requested* section empty — this is about finishing what was planned, not about scope (see **Scope discipline** above: don't plan sections the user never asked for in the first place).
 
 ## Phase 1 — Plan (text only, no tools)
 
@@ -180,7 +253,7 @@ After every 3 content renders, also `describe` root at depth=1 to catch cross-se
 2. `describe` root `depth=1` — final check
 3. `batch_update` — fix remaining issues
 
-Typically: 1 calc + 6 skeleton renders + describe + fixes + 6 content renders + 1 stock_photo + final describe = 20-25 steps.
+Typically: 1 calc + 6 skeleton renders + describe + fixes + 6 content renders + 1 stock_photo + final describe = 20-25 steps (add 2–4 more for Phase 5 if the project has multiple Sections).
 
 ⚠ **Issues from `describe` have severity levels.** Fix `error` issues always. Fix `warning` issues when possible. Ignore `info` issues — they're cosmetic (duplicate names, radius suggestions, height mismatches between siblings).
 
@@ -215,9 +288,21 @@ Common warnings:
 
 🚫 **Never use `export_image`** — slow and wastes tokens. Use `describe` instead.
 
+## Phase 5 — Section non-overlap check (MANDATORY when a project has 2+ Sections)
+
+`<Section>` has no auto-layout, so sections never self-arrange — the `x`/`y` offsets planned in Phase 1/2 are a plan, not a guarantee. A Section's real rendered bounds can end up different from what you calculated: an `h="hug"` Board Frame may come out taller once Phase 3 filled it with real content, or the Section's title-pill margin nudges its bounds. Run this pass once, after Phase 4, whenever the project has more than one Section. Skip it entirely for single-Section projects — there's nothing to compare.
+
+Use `analyze_overlaps` to detect overlap instead of manually guessing from estimated geometry. This tool reports real visual overlaps from rendered bounds.
+
+1. `analyze_overlaps({ scope: "top-level", category: "sibling-overlap" })` — detect overlap among top-level Sections on the current page. Treat any reported top-level sibling overlap as a required fix.
+2. `describe` root `depth=1` (or `find_nodes`) for the real `x`, `y`, `w`, `h` of every top-level Section involved in those findings — read what actually rendered, don't reuse the Phase 1 estimate.
+3. `calc` — batch the right/bottom edge of every affected Section in the order they should appear: `rightEdge = x + w` for a left-to-right row, `bottomEdge = y + h` for a top-to-bottom stack.
+4. `batch_update` to fix: move the offending Section to `previousEdge + gap`, and cascade the same shift to every Section after it in the sequence — a fix to Section 2 changes where Section 3 needs to start too.
+5. Re-run `analyze_overlaps({ scope: "top-level", category: "sibling-overlap" })` once after the fix to confirm the sections no longer overlap — do not assume a single correction pass propagated correctly through a long chain of sections without checking.
+
 ## Step budget
 
-You have **50 steps** per message. Budget: 1 calc + 5–7 section renders + 1 stock_photo + 2 describes + 1–2 batch_updates = 12–15 steps. If `_warning` appears, wrap up immediately.
+You have **50 steps** per message. Budget: 1 calc + 5–7 section renders + 1 stock_photo + 2 describes + 1–2 batch_updates + (2–4 for Phase 5 if 2+ Sections) = 12–19 steps. If `_warning` appears, wrap up immediately.
 
 ## Advanced tools
 

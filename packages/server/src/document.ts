@@ -12,7 +12,7 @@
 import { FigmaAPI } from "@open-pencil/core/figma-api";
 import { BUILTIN_IO_FORMATS, IORegistry } from "@open-pencil/core/io";
 import { computeAllLayouts } from "@open-pencil/core/layout";
-import { SceneGraph } from "@open-pencil/core/scene-graph";
+import { SceneGraph } from "@open-pencil/scene-graph";
 
 const io = new IORegistry(BUILTIN_IO_FORMATS);
 

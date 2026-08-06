@@ -1,9 +1,16 @@
 {
   "name": "@open-pencil/server",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "description": "Headless prompt-to-design backend. Reuses @open-pencil/core directly — no browser, no MCP, no ACP agents.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soranoo/open-pencil.git",
+    "directory": "packages/server"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun run tsdown --config tsdown.config.ts",
@@ -25,7 +32,8 @@
     "@hono/node-server": "^1",
     "@hono/standard-validator": "^0.3.0",
     "@hono/swagger-ui": "^0.6.1",
-    "@open-pencil/core": "^0.13.2",
+    "@open-pencil/core": "workspace:*",
+    "@open-pencil/scene-graph": "workspace:*",
     "@openrouter/ai-sdk-provider": "^1",
     "@t3-oss/env-core": "^0.13.11",
     "ai": "^6",

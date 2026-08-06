@@ -7,7 +7,8 @@ export { defineTool, nodeToResult, nodeSummary, requireNode, NodeNotFoundError }
 export type { ToolDef, ParamDef, ParamType } from './schema'
 export { toolsToAI, buildDebugLog } from './ai-adapter'
 export type { ToolLogEntry, ToolDebugLog, AIAdapterOptions, StepBudget } from './ai-adapter'
-export { calcClusterConfidence, wrapEvalCode } from './analyze'
+export { calcClusterConfidence, computeOverlaps, wrapEvalCode } from './analyze'
+export type { OverlapItem } from './analyze'
 export {
   VALID_OVERLAP_CATEGORIES,
   VALID_OVERLAP_SCOPES,

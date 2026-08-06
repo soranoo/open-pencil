@@ -22,6 +22,7 @@ import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless
 import type { RunState } from "./headless-tools";
 import { createLanguageModel, resolveLanguageModelID } from "./model";
 import type { ModelConfig } from "./model";
+import { runOverlapGuardrail } from "./overlap-guardrail";
 import SYSTEM_PROMPT from "./system-prompt.md";
 
 const ANTHROPIC_CACHE_CONTROL = {
@@ -68,6 +69,9 @@ export async function runPrompt(
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     providerOptions: cacheProviderOptions,
+    onFinish: async () => {
+      await runOverlapGuardrail(doc);
+    },
   });
 
   const result = await agent.generate({
