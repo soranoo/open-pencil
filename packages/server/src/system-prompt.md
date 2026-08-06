@@ -46,7 +46,22 @@ Nested flex containers need w="fill" at EVERY level to stretch. `grow={1}` insid
 
 No margin property. For single-child offset, wrap in Frame with padding.
 
-**Text wrapping (CRITICAL):** Multiline text MUST have `w="fill"` (not `w={N}`). Use `w="fill"` on Text inside `flex="col"` cards — this stretches text to card width and enables auto-wrapping. Never use fixed `w={N}` on text that should wrap — the width may not match the parent due to font metric differences. For fixed-height rows, add `maxLines={1}`. In wrap layouts, calculate: columns = floor((available + gap) / (child_w + gap)).
+**Text sizing — pick the mode deliberately, don't default everything to the same one:**
+
+- **AUTO_WIDTH is the default for text** (`w="hug" h="hug"` — already the default per the Sizing rule above): the box shrinks to fit the content on one line, no wrapping. Use it for anything short and label-like — names, scores/numbers, button labels, nav items, badges, headings, table-cell values. Most text in a UI is this, not long-form — only switch off it when the content genuinely is long-form.
+- **AUTO_HEIGHT is for long-form text that should wrap** (`w="fill"`, or an explicit `w={N}` that matches the real column width, with `h="hug"`): paragraphs, descriptions, article bodies, bios — text where the line count isn't known ahead of time and the box should grow taller to fit it.
+- **FIXED (`w={N} h={N}`, both locked) is for hard clamps only** — a table/grid cell that must stay a constant size regardless of content length, a badge/pill that must not grow past its slot, or a title that must clip to an exact line count for grid alignment. Always pair FIXED with `truncate` or `maxLines={N}` and `overflow="hidden"`, or the clipped content just renders outside the box instead of being hidden.
+- ⚠ **Don't default short text to `w="fill"`.** A team name, a score, a single stat number, a nav label should stay AUTO_WIDTH (hug). Forcing them to `fill` inside a narrow row/column is what makes a 2-character number wrap into two lines of one digit each — there's no real wrapping reason for text that short, only a width that's been squeezed too far by the layout around it.
+
+## Sizing discipline: hug vs fill vs manual width
+
+Think like a web developer: block-level containers track their parent's width by default, they don't shrink-wrap, and they never carry a width typed in by eye or copied from a different frame.
+
+- **Default containers meant to span their row/column to `w="fill"`** (with `grow={1}` when siblings share a row) — not `w="hug"`. Reserve `hug` for elements truly sized by their own content: buttons, chips/badges, icons, avatars, tags. A card, a row, a column, a content panel, a sidebar should fill/grow to use the space available — hugging one of these leaves dead whitespace or, once content is added, collides with siblings.
+- **Never hand-type a fixed pixel width for something living inside a flex/grid parent** — and never copy a width from one card/frame onto a different one. Two frames of different widths need their own `w="fill"` children, not the same literal number; a width borrowed from elsewhere is exactly how a text box or card ends up wider than its own parent and overflows into — or past — the frame next to it.
+- Fixed `w={N}` is for things with a genuine fixed size in the design system regardless of context — an icon, an avatar, a fixed-width rail/sidebar, a badge. If the element's job is "the rest of the row" or "the full column," that's `fill`/`grow`, never a typed number.
+- **When switching an element from `hug` to `fill` (or back), re-check the whole layout still makes sense** — confirm the parent has `flex` set, confirm `items` (cross-axis alignment) still matches intent, and re-`describe` to make sure no sibling using `grow` got squeezed to zero width or pushed off-frame by the change. One hug→fill swap changes how much space every sibling gets.
+- In `wrap` layouts specifically, calculate the column count instead of guessing: `columns = floor((available + gap) / (child_w + gap))`.
 
 ## Corner radius
 
