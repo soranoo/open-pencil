@@ -193,6 +193,8 @@ export function filterNodes(
   const includeLocked = args.include_locked === true
   const includeAbsolute = args.include_absolute === true
   const pageIdFilter = args.page_id?.trim()
+  const parentIdFilter = args.parent_id?.trim()
+  const parentScope = args.parent_scope ?? 'children'
   const typeFilter = parseNodeTypes(args.type)
 
   const allNodes = [...graph.getAllNodes()]
@@ -203,6 +205,13 @@ export function filterNodes(
     if (node.type === 'CANVAS') continue
     // Apply page scoping to totalNodes so summary counts reflect the filtered universe.
     if (pageIdFilter && findPageId(graph, node) !== pageIdFilter) continue
+    if (parentIdFilter) {
+      const isScopedNode =
+        parentScope === 'descendants'
+          ? node.id !== parentIdFilter && graph.isDescendant(node.id, parentIdFilter)
+          : node.parentId === parentIdFilter
+      if (!isScopedNode) continue
+    }
     totalNodes++
     if (
       !isCandidate(node, graph, {

@@ -82,6 +82,10 @@ export interface AnalyzeOverlapsArgs {
   page?: string
   /** Stable page ID; takes precedence over `page`. */
   page_id?: string
+  /** Limit analysis to a specific parent node. */
+  parent_id?: string
+  /** Whether parent_id scopes direct children or all descendants. */
+  parent_scope?: 'children' | 'descendants'
   type?: string
 }
 
@@ -331,7 +335,7 @@ export function computeOverlaps(
 export const analyzeOverlaps = defineTool({
   name: 'analyze_overlaps',
   description:
-    'Detect visual overlaps and layout overflows across the current page. Useful for finding content that covers footers, text that bleeds outside frames, and accidental sibling overlaps.',
+    'Detect visual overlaps and layout overflows across the current page or inside a specific parent/container. Useful for finding content that covers footers, text that bleeds outside frames, and accidental sibling overlaps. Use parent_id to restrict analysis to one container; parent_scope="children" checks only direct children of that parent, while parent_scope="descendants" checks the full subtree under that parent.',
   params: {
     scope: {
       type: 'string',
@@ -379,6 +383,18 @@ export const analyzeOverlaps = defineTool({
       type: 'string',
       description:
         'Limit analysis to nodes on the page with this stable ID (takes precedence over page)'
+    },
+    parent_id: {
+      type: 'string',
+      description:
+        'Limit analysis to nodes under this parent/container. Use this when you want to check overlap inside one given section or frame instead of the whole page.'
+    },
+    parent_scope: {
+      type: 'string',
+      description:
+        'Only used when parent_id is set. "children" = inspect only the parent\'s direct children. "descendants" = inspect the full subtree under that parent, including nested children.',
+      enum: ['children', 'descendants'],
+      default: 'children'
     },
     type: {
       type: 'string',
