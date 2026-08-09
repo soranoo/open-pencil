@@ -32,10 +32,11 @@ export const generateStatusParamsSchema = z.object({
 
 export const generateStatusResponseSchema = z.object({
   requestId: z.string(),
-  completed: z.boolean(),
+  startedAt: z.number().int().min(0),
+  completedAt: z.number().int().min(0).nullable(),
   queuePosition: z.number().int().min(0).nullable(),
-  failed: z.boolean(),
-  saved: z.boolean(),
+  failedAt: z.number().int().min(0).nullable(),
+  savedAt: z.number().int().min(0).nullable(),
   error: z.string().nullable(),
   result: generateResultSchema.nullable(),
 });

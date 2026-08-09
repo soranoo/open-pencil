@@ -13,6 +13,10 @@ export interface GenerateRequest {
   autosave?: boolean;
 }
 
+interface GenerateLogContext {
+  requestId?: string;
+}
+
 const modelUsageSchema = z.object({
   inputTokens: z.union([z.number(), z.undefined()]),
   inputTokenDetails: z.object({
@@ -40,6 +44,7 @@ export const generateResultSchema = z.object({
   summary: z.string(),
   toolCallCount: z.number(),
   hitStepLimit: z.boolean(),
+  timeUsedMs: z.number().int().min(0),
   toolLog: z.array(toolLogSchema),
   usage: modelUsageSchema,
 });
@@ -53,7 +58,10 @@ export class DesignNotFoundError extends Error {
   }
 }
 
-export async function processGenerateRequest(body: GenerateRequest): Promise<GenerateResponse> {
+export async function processGenerateRequest(
+  body: GenerateRequest,
+  logContext?: GenerateLogContext,
+): Promise<GenerateResponse> {
   let session = body.designId ? await getSession(body.designId) : undefined;
   if (!session && body.designId) {
     const bytes = await getStorage()
@@ -90,6 +98,10 @@ export async function processGenerateRequest(body: GenerateRequest): Promise<Gen
         },
         body.prompt,
         session.messages,
+        {
+          requestId: logContext?.requestId,
+          designId: session.id,
+        },
       );
 
   session.messages = result.messages;
