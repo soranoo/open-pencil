@@ -161,6 +161,28 @@ describe('AI adapter', () => {
     expect(result.count).toBe(2)
   })
 
+  test('analyze_overflow works through adapter', async () => {
+    const { tools, figma } = setup()
+    const parent = figma.createFrame()
+    parent.name = 'Card'
+    parent.resize(100, 80)
+    const child = figma.createRectangle()
+    child.name = 'Image'
+    child.resize(140, 60)
+    parent.appendChild(child)
+
+    const analyzeOverflow = adapterTool(tools, 'analyze_overflow')
+    const result = (await analyzeOverflow.execute({ parent_id: parent.id })) as {
+      summary: { overflowCount: number }
+      overflows: Array<{ child: { id: string }; parent: { id: string }; overflowX: boolean }>
+    }
+
+    expect(result.summary.overflowCount).toBe(1)
+    expect(result.overflows[0].child.id).toBe(child.id)
+    expect(result.overflows[0].parent.id).toBe(parent.id)
+    expect(result.overflows[0].overflowX).toBe(true)
+  })
+
   test('set_layout works through adapter', async () => {
     const { tools, figma } = setup()
     const frame = figma.createFrame()

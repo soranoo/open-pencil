@@ -1,6 +1,7 @@
 import {
   analyzeClusters,
   analyzeColors,
+  analyzeOverflow,
   analyzeOverlaps,
   analyzeSpacing,
   analyzeTypography,
@@ -186,6 +187,7 @@ export const EXTENDED_TOOLS: ToolDef[] = [
   analyzeTypography,
   analyzeSpacing,
   analyzeClusters,
+  analyzeOverflow,
   analyzeOverlaps,
   diffCreate,
   diffShow,

@@ -357,6 +357,28 @@ describe('analyze overlaps', () => {
     expect(result.summary.overlapCount).toBeGreaterThan(0)
   })
 
+  test('parent_id scopes overlap checks to the given parent children', () => {
+    const graph = new SceneGraph()
+    const page = pageId(graph)
+    const sectionA = frame(graph, 'Section A', page, 0, 0, 300, 300)
+    const sectionB = frame(graph, 'Section B', page, 400, 0, 300, 300)
+
+    rect(graph, 'A1', sectionA.id, 0, 0, 100, 100)
+    rect(graph, 'A2', sectionA.id, 50, 50, 100, 100)
+    rect(graph, 'B1', sectionB.id, 0, 0, 100, 100)
+    rect(graph, 'B2', sectionB.id, 140, 140, 100, 100)
+
+    const result = computeOverlaps(graph, {
+      parent_id: sectionA.id,
+      parent_scope: 'children',
+      scope: 'same-parent'
+    })
+
+    expect(result.summary.overlapCount).toBe(1)
+    expect(result.overlaps.every((o) => o.nodeA.parentId === sectionA.id)).toBe(true)
+    expect(result.overlaps.every((o) => o.nodeB.parentId === sectionA.id)).toBe(true)
+  })
+
   test('scope=top-level excludes nested parent-overflow', () => {
     const graph = new SceneGraph()
     const page = pageId(graph)

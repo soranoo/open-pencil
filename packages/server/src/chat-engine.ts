@@ -45,6 +45,19 @@ export interface GenerateResult {
   usage: LanguageModelUsage;
 }
 
+interface AgentLogContext {
+  requestId?: string;
+  designId?: string;
+}
+
+function logAgentError(message: string, context: AgentLogContext, error: unknown): void {
+  console.error(message, {
+    requestId: context.requestId ?? null,
+    designId: context.designId ?? null,
+    error: error instanceof Error ? error.message : String(error),
+  });
+}
+
 /**
  * Runs one prompt turn against a document, mutating `doc.graph` in place via the tool
  * calls the model makes. Pass back `previousMessages` on follow-up calls for multi-turn
@@ -55,9 +68,10 @@ export async function runPrompt(
   modelConfig: ModelConfig,
   prompt: string,
   previousMessages: ModelMessage[] = [],
+  logContext: AgentLogContext = {},
 ): Promise<GenerateResult> {
   const runState = createRunState();
-  const tools = createHeadlessTools(doc.figma, runState);
+  const tools = createHeadlessTools(doc.figma, runState, logContext);
   const effectiveModelID = resolveLanguageModelID(modelConfig);
   const cacheProviderOptions = supportsAnthropicCaching(modelConfig.providerID, effectiveModelID)
     ? ANTHROPIC_CACHE_CONTROL
@@ -69,14 +83,23 @@ export async function runPrompt(
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     providerOptions: cacheProviderOptions,
-    onFinish: async () => {
-      await runOverlapGuardrail(doc);
-    },
   });
 
-  const result = await agent.generate({
-    messages: [...previousMessages, { role: "user", content: prompt }],
-  });
+  let result;
+  try {
+    result = await agent.generate({
+      messages: [...previousMessages, { role: "user", content: prompt }],
+    });
+    try {
+      await runOverlapGuardrail(doc);
+    } catch (error) {
+      logAgentError("[agent] overlap guardrail failed", logContext, error);
+      throw error;
+    }
+  } catch (error) {
+    logAgentError("[agent] generate failed", logContext, error);
+    throw error;
+  }
 
   return {
     messages: [...previousMessages, { role: "user", content: prompt }, ...result.response.messages],
