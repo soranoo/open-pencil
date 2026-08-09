@@ -8,6 +8,7 @@ export type {
   AnalyzeOverflowArgs,
   AnalyzeOverflowResult,
   AnalyzeOverflowSummary,
+  OverflowGroup,
   OverflowItem,
   OverflowNodeSummary
 } from './analyze/overflow'

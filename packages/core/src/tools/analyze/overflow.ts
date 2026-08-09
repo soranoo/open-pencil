@@ -27,7 +27,6 @@ export interface OverflowNodeSummary {
 
 export interface OverflowItem {
   child: OverflowNodeSummary
-  parent: OverflowNodeSummary
   overflowX: boolean
   overflowY: boolean
   widthDelta: number
@@ -35,7 +34,12 @@ export interface OverflowItem {
   widthRatio: number
   heightRatio: number
   message: string
-  guidance: string
+}
+
+export interface OverflowGroup {
+  parent: OverflowNodeSummary
+  parentPath: string
+  overflows: OverflowItem[]
 }
 
 export interface AnalyzeOverflowSummary {
@@ -50,9 +54,13 @@ export interface AnalyzeOverflowSummary {
 }
 
 export interface AnalyzeOverflowResult {
-  overflows: OverflowItem[]
+  groups: OverflowGroup[]
+  guidance?: string
   summary: AnalyzeOverflowSummary
 }
+
+const OVERFLOW_GUIDANCE =
+  'Check whether this overflow is intentional (hero bleed, decorative art, carousel, modal) or a layout bug. If unintentional, resize the child or parent instead of relying on hidden clipping.'
 
 function toNodeSummary(node: SceneNode): OverflowNodeSummary {
   return {
@@ -118,7 +126,22 @@ function isCandidate(
   return true
 }
 
-function compareAgainstParent(child: SceneNode, parent: SceneNode): OverflowItem | null {
+function relativeAncestorPath(graph: SceneGraph, node: SceneNode): string {
+  const ancestors: string[] = []
+  let current = node.parentId ? graph.getNode(node.parentId) : undefined
+
+  while (current && current.type !== 'CANVAS') {
+    ancestors.unshift(`"${current.name}"`)
+    current = current.parentId ? graph.getNode(current.parentId) : undefined
+  }
+
+  return ancestors.join('/')
+}
+
+function compareAgainstParent(
+  child: SceneNode,
+  parent: SceneNode
+): OverflowItem | null {
   if (parent.type === 'CANVAS') return null
   if (parent.width <= 0 || parent.height <= 0) return null
 
@@ -138,17 +161,37 @@ function compareAgainstParent(child: SceneNode, parent: SceneNode): OverflowItem
 
   return {
     child: toNodeSummary(child),
-    parent: toNodeSummary(parent),
     overflowX,
     overflowY,
     widthDelta: Math.round(Math.max(0, widthDelta)),
     heightDelta: Math.round(Math.max(0, heightDelta)),
     widthRatio: Math.round(widthRatio * 1000) / 1000,
     heightRatio: Math.round(heightRatio * 1000) / 1000,
-    message: `Child "${child.name}" is larger than parent "${parent.name}" on ${axisText} (${deltas.join(', ')})`,
-    guidance:
-      'Check whether this overflow is intentional (hero bleed, decorative art, carousel, modal) or a layout bug. If unintentional, resize the child or parent instead of relying on hidden clipping.'
+    message: `Child "${child.name}" is larger on ${axisText} (${deltas.join(', ')})`
   }
+}
+
+function groupOverflows(graph: SceneGraph, overflows: OverflowItem[]): OverflowGroup[] {
+  const groups = new Map<string, OverflowGroup>()
+
+  for (const overflow of overflows) {
+    const parentId = overflow.child.parentId
+    const parent = parentId ? graph.getNode(parentId) : undefined
+    if (!parent) continue
+
+    let group = groups.get(parent.id)
+    if (!group) {
+      group = {
+        parent: toNodeSummary(parent),
+        parentPath: relativeAncestorPath(graph, parent),
+        overflows: []
+      }
+      groups.set(parent.id, group)
+    }
+    group.overflows.push(overflow)
+  }
+
+  return [...groups.values()]
 }
 
 export function computeOverflowDetections(
@@ -162,7 +205,7 @@ export function computeOverflowDetections(
 
   if (!resolvedPageId) {
     return {
-      overflows: [],
+      groups: [],
       summary: {
         totalNodes: 0,
         analyzedNodes: 0,
@@ -223,6 +266,8 @@ export function computeOverflowDetections(
   })
 
   const limit = Math.max(0, Number.isFinite(Number(args.limit)) ? Number(args.limit) : 100)
+  const limitedOverflows = overflows.slice(0, limit)
+  const groups = groupOverflows(graph, limitedOverflows)
   const axisCounts = { x: 0, y: 0, both: 0 }
   for (const item of overflows) {
     if (item.overflowX && item.overflowY) axisCounts.both++
@@ -231,7 +276,8 @@ export function computeOverflowDetections(
   }
 
   return {
-    overflows: overflows.slice(0, limit),
+    groups,
+    ...(groups.length > 0 ? { guidance: OVERFLOW_GUIDANCE } : {}),
     summary: {
       totalNodes,
       analyzedNodes,

@@ -22,6 +22,7 @@ import { createHeadlessTools, createRunState, MAX_AGENT_STEPS } from "./headless
 import type { RunState } from "./headless-tools";
 import { createLanguageModel, resolveLanguageModelID } from "./model";
 import type { ModelConfig } from "./model";
+import { runOverflowGuardrail } from "./overflow-guardrail";
 import { runOverlapGuardrail } from "./overlap-guardrail";
 import SYSTEM_PROMPT from "./system-prompt.md";
 
@@ -90,12 +91,18 @@ export async function runPrompt(
     result = await agent.generate({
       messages: [...previousMessages, { role: "user", content: prompt }],
     });
-    try {
-      await runOverlapGuardrail(doc);
-    } catch (error) {
-      logAgentError("[agent] overlap guardrail failed", logContext, error);
-      throw error;
-    }
+    const repairedOverlapNodeIds = await runOverlapGuardrail(doc);
+    console.log(`[agent] repaired ${repairedOverlapNodeIds.length} overlapping nodes`, {
+      repairedOverlapNodeIds,
+      requestId: logContext.requestId ?? null,
+      designId: logContext.designId ?? null,
+    });
+    const repairedOverflowNodeIds = runOverflowGuardrail(doc);
+    console.log(`[agent] repaired ${repairedOverflowNodeIds.length} overflowing text nodes`, {
+      repairedOverflowNodeIds,
+      requestId: logContext.requestId ?? null,
+      designId: logContext.designId ?? null,
+    });
   } catch (error) {
     logAgentError("[agent] generate failed", logContext, error);
     throw error;

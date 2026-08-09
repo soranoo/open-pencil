@@ -8,7 +8,7 @@ export type { ToolDef, ParamDef, ParamType } from './schema'
 export { toolsToAI, buildDebugLog } from './ai-adapter'
 export type { ToolLogEntry, ToolDebugLog, AIAdapterOptions, StepBudget } from './ai-adapter'
 export { calcClusterConfidence, computeOverflowDetections, computeOverlaps, wrapEvalCode } from './analyze'
-export type { OverflowItem, OverlapItem } from './analyze'
+export type { OverflowGroup, OverflowItem, OverlapItem } from './analyze'
 export {
   VALID_OVERLAP_CATEGORIES,
   VALID_OVERLAP_SCOPES,
