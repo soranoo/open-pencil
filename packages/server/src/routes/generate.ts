@@ -15,6 +15,10 @@ export async function generateRoute(c: Context) {
     return c.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to process generation request";
+    console.error("[generate-route] failed to enqueue request", {
+      error: message,
+      designId: body.designId ?? null,
+    });
     return c.json({ error: message }, 500);
   }
 }

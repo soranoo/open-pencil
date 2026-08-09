@@ -18,7 +18,7 @@
 import { valibotSchema } from "@ai-sdk/valibot";
 import type { FigmaAPI } from "@open-pencil/core/figma-api";
 import { computeAllLayouts } from "@open-pencil/core/layout";
-import { CORE_TOOLS, toolsToAI } from "@open-pencil/core/tools";
+import { CORE_TOOLS, EXTENDED_TOOLS, toolsToAI } from "@open-pencil/core/tools";
 import type { ToolLogEntry } from "@open-pencil/core/tools";
 import { tool, type ToolSet } from "ai";
 import * as v from "valibot";
@@ -30,6 +30,16 @@ export interface RunState {
   currentSteps: number;
 }
 
+interface AgentLogContext {
+  requestId?: string;
+  designId?: string;
+}
+
+const HEADLESS_TOOLS = [
+  ...CORE_TOOLS,
+  ...EXTENDED_TOOLS.filter((tool) => tool.name === "analyze_overflow"),
+];
+
 export function createRunState(): RunState {
   return { toolLog: [], currentSteps: 0 };
 }
@@ -38,9 +48,13 @@ export function createRunState(): RunState {
  * Builds the same tool set the in-app chat exposes to the model, bound to a headless
  * FigmaAPI instance instead of a live editor store.
  */
-export function createHeadlessTools(figma: FigmaAPI, runState: RunState): ToolSet {
+export function createHeadlessTools(
+  figma: FigmaAPI,
+  runState: RunState,
+  logContext: AgentLogContext = {},
+): ToolSet {
   return toolsToAI(
-    CORE_TOOLS,
+    HEADLESS_TOOLS,
     {
       getFigma: () => figma,
       onBeforeExecute: () => {
@@ -57,6 +71,15 @@ export function createHeadlessTools(figma: FigmaAPI, runState: RunState): ToolSe
         // No canvas to highlight. No-op.
       },
       onToolLog: (entry) => {
+        if (entry.error) {
+          console.error("[agent-tool] execution failed", {
+            requestId: logContext.requestId ?? null,
+            designId: logContext.designId ?? null,
+            tool: entry.tool,
+            args: entry.args,
+            error: entry.error,
+          });
+        }
         runState.toolLog.push(entry);
         runState.currentSteps++;
       },

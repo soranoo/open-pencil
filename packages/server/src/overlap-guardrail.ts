@@ -6,14 +6,15 @@ import type { SceneGraph, SceneNode, Stroke } from "@open-pencil/scene-graph";
 
 import type { DocumentHandle } from "./document";
 
-const DEFAULT_SECTION_GAP = 48;
+const DEFAULT_SECTION_GAP_X = 64;
+const DEFAULT_SECTION_GAP_Y = 160;
 const DEFAULT_CHILD_GAP = 16;
 const DEFAULT_CHILD_PADDING = 16;
 const SECTION_FIT_PADDING = 24;
 
 const SECTION_STROKE: Stroke = {
   color: { ...SECTION_DEFAULT_STROKE.color },
-  weight: 12,
+  weight: 6,
   opacity: SECTION_DEFAULT_STROKE.opacity,
   visible: SECTION_DEFAULT_STROKE.visible,
   align: SECTION_DEFAULT_STROKE.align,
@@ -259,12 +260,13 @@ function collectRepairTargets(graph: SceneGraph, pageId: string): RepairTarget[]
     );
     if (pageChildren.length > 1) {
       const axis = computeAxis(pageChildren);
+      const sectionGap = axis === "HORIZONTAL" ? DEFAULT_SECTION_GAP_X : DEFAULT_SECTION_GAP_Y;
       targets.set(pageId, {
         parentId: pageId,
         childIds: pageChildren.map((child) => child.id),
         mode: "canvas-stack",
         axis,
-        gap: computeGap(pageChildren, axis, DEFAULT_SECTION_GAP),
+        gap: computeGap(pageChildren, axis, sectionGap),
         padding: 0,
       });
     }
