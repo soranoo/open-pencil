@@ -2,9 +2,11 @@
 
 import { getMessageQueue } from "./index.js";
 import type { QueueDelivery } from "./interface.js";
-import { isDesignSaved, saveDesignSession } from "@/design-save.js";
+import { getDb, type GenerateRequestStatus, type StoredGenerateRequestStatus } from "@/db/index.js";
+import { saveDesignSession } from "@/design-save.js";
 import { env } from "@/env.js";
 import { processGenerateRequest, type GenerateRequest, type GenerateResponse } from "@/generate.js";
+import { getSession } from "@/session-manager.js";
 import { getUuid } from "@/utils/get-uuid.js";
 
 export const GENERATE_QUEUE_NAME = "generate";
@@ -18,24 +20,14 @@ interface QueuedGenerateRequest extends GenerateRequest {
   requestId: string;
 }
 
-export interface GenerateRequestStatus {
-  requestId: string;
-  completed: boolean;
-  queuePosition: number | null;
-  failed: boolean;
-  saved: boolean;
-  error: string | null;
-  result: GenerateResponse | null;
-}
-
-interface InternalGenerateRequestStatus extends GenerateRequestStatus {
+interface InternalGenerateRequestStatus extends StoredGenerateRequestStatus {
   processing: boolean;
 }
 
-const requestStatuses = new Map<string, InternalGenerateRequestStatus>();
 const queuedRequestIds: string[] = [];
 
 const generateQueue = getMessageQueue<QueuedGenerateRequest>(GENERATE_QUEUE_NAME);
+const db = getDb();
 
 let workerStarted = false;
 
@@ -44,29 +36,31 @@ export async function enqueueGenerateRequest(
 ): Promise<EnqueueGenerateResponse> {
   await ensureGenerateWorker();
   const requestId = getUuid();
+  const startedAt = Date.now();
 
   const status: InternalGenerateRequestStatus = {
     requestId,
-    completed: false,
+    startedAt,
+    completedAt: null,
     queuePosition: null,
-    failed: false,
-    saved: false,
+    failedAt: null,
+    savedAt: null,
     error: null,
     result: null,
     processing: false,
   };
 
-  requestStatuses.set(requestId, status);
   queuedRequestIds.push(requestId);
-  updateQueuedPositions();
+  await db.upsertGenerateRequestStatus(status);
+  await updateQueuedPositions();
 
   await generateQueue.enqueue({ ...payload, requestId }).catch((error) => {
-    requestStatuses.delete(requestId);
+    db.deleteGenerateRequestStatus(requestId);
     removeFromQueued(requestId);
     throw error;
   });
 
-  const queuePosition = requestStatuses.get(requestId)?.queuePosition ?? 1;
+  const queuePosition = (await db.getGenerateRequestStatus(requestId))?.queuePosition ?? 1;
   return { requestId, queuePosition };
 }
 
@@ -74,17 +68,19 @@ export async function getGenerateRequestStatus(
   requestId: string,
 ): Promise<GenerateRequestStatus | null> {
   await ensureGenerateWorker();
-  const status = requestStatuses.get(requestId);
+  const status = await db.getGenerateRequestStatus(requestId);
   if (!status) {
     return null;
   }
 
+  const savedAt = await getSavedAt(status);
   return {
     requestId: status.requestId,
-    completed: status.completed,
+    startedAt: status.startedAt,
+    completedAt: status.completedAt,
     queuePosition: status.queuePosition,
-    failed: status.failed,
-    saved: await getSavedStatus(status),
+    failedAt: status.failedAt,
+    savedAt,
     error: status.error,
     result: status.result,
   };
@@ -115,103 +111,121 @@ async function ensureGenerateWorker(): Promise<void> {
 async function processGenerateDelivery(
   delivery: QueueDelivery<QueuedGenerateRequest>,
 ): Promise<void> {
-  markProcessing(delivery.payload.requestId);
+  await markProcessing(delivery.payload.requestId);
+  const processingStartedAt = Date.now();
 
   try {
-    const response = await processGenerateRequest(delivery.payload);
-    let saved = false;
+    const response = await processGenerateRequest(delivery.payload, {
+      requestId: delivery.payload.requestId,
+    });
+    const timeUsedMs = Date.now() - processingStartedAt;
+    let savedAt: number | null = null;
     let completionError: string | null = null;
 
     if (delivery.payload.autosave) {
       try {
         await saveDesignSession(response.designId);
-        saved = true;
+        savedAt = Date.now();
       } catch (error) {
+        console.error("[generate-worker] autosave failed", {
+          requestId: delivery.payload.requestId,
+          designId: response.designId,
+          error: error instanceof Error ? error.message : String(error),
+        });
         completionError = error instanceof Error ? `Autosave failed: ${error.message}` : "Autosave failed";
       }
     }
 
     await delivery.ack();
-    markCompleted(delivery.payload.requestId, response, saved, completionError);
+    await markCompleted(delivery.payload.requestId, { ...response, timeUsedMs }, savedAt, completionError);
   } catch (error) {
     await delivery.reject(false);
     const message = error instanceof Error ? error.message : "Generation failed";
-    markFailed(delivery.payload.requestId, message);
+    console.error("[generate-worker] generation failed", {
+      requestId: delivery.payload.requestId,
+      error: message,
+    });
+    await markFailed(delivery.payload.requestId, message);
   }
 }
 
-function markProcessing(requestId: string): void {
-  const status = requestStatuses.get(requestId);
+async function markProcessing(requestId: string): Promise<void> {
+  const status = await db.getGenerateRequestStatus(requestId);
   if (!status) {
     return;
   }
   status.processing = true;
   status.queuePosition = 0;
-  removeFromQueued(requestId);
+  await db.upsertGenerateRequestStatus(status);
+  await removeFromQueued(requestId);
 }
 
-function markCompleted(
+async function markCompleted(
   requestId: string,
   result: GenerateResponse,
-  saved: boolean,
+  savedAt: number | null,
   error: string | null,
-): void {
-  const status = requestStatuses.get(requestId);
+): Promise<void> {
+  const status = await db.getGenerateRequestStatus(requestId);
   if (!status) {
     return;
   }
   status.processing = false;
-  status.completed = true;
+  status.completedAt = Date.now();
   status.queuePosition = null;
-  status.failed = false;
-  status.saved = saved;
+  status.failedAt = null;
+  status.savedAt = savedAt;
   status.error = error;
   status.result = result;
+  await db.upsertGenerateRequestStatus(status);
 }
 
-function markFailed(requestId: string, error: string): void {
-  const status = requestStatuses.get(requestId);
+async function markFailed(requestId: string, error: string): Promise<void> {
+  const status = await db.getGenerateRequestStatus(requestId);
   if (!status) {
     return;
   }
   status.processing = false;
-  status.completed = true;
+  status.completedAt = Date.now();
   status.queuePosition = null;
-  status.failed = true;
-  status.saved = false;
+  status.failedAt = status.completedAt;
+  status.savedAt = null;
   status.error = error;
   status.result = null;
+  await db.upsertGenerateRequestStatus(status);
 }
 
-async function getSavedStatus(status: InternalGenerateRequestStatus): Promise<boolean> {
-  if (status.saved) {
-    return true;
+async function getSavedAt(status: StoredGenerateRequestStatus): Promise<number | null> {
+  if (status.savedAt !== null) {
+    return status.savedAt;
   }
   const designId = status.result?.designId;
   if (!designId) {
-    return false;
+    return null;
   }
 
-  const saved = await isDesignSaved(designId);
-  status.saved = saved;
-  return saved;
+  const session = await getSession(designId);
+  status.savedAt = session?.savedAt ?? null;
+  await db.upsertGenerateRequestStatus(status);
+  return status.savedAt;
 }
 
-function removeFromQueued(requestId: string): void {
+async function removeFromQueued(requestId: string): Promise<void> {
   const index = queuedRequestIds.indexOf(requestId);
   if (index === -1) {
     return;
   }
   queuedRequestIds.splice(index, 1);
-  updateQueuedPositions();
+  await updateQueuedPositions();
 }
 
-function updateQueuedPositions(): void {
+async function updateQueuedPositions(): Promise<void> {
   for (const [index, requestId] of queuedRequestIds.entries()) {
-    const status = requestStatuses.get(requestId);
-    if (!status || status.processing || status.completed) {
+    const status = await db.getGenerateRequestStatus(requestId);
+    if (!status || status.processing || status.completedAt !== null) {
       continue;
     }
     status.queuePosition = index + 1;
+    await db.upsertGenerateRequestStatus(status);
   }
 }

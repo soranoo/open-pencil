@@ -6,7 +6,13 @@ import { MemoryDb } from "./memory";
 import { PostgresDb } from "./postgres";
 import { env } from "@/env";
 
-export type { Db, DesignMetadata, UpsertDesignParams } from "./interface";
+export type {
+  Db,
+  DesignMetadata,
+  GenerateRequestStatus,
+  StoredGenerateRequestStatus,
+  UpsertDesignParams,
+} from "./interface";
 
 let db: Db;
 

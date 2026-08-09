@@ -1,6 +1,11 @@
 import { Pool } from "pg";
 
-import type { Db, DesignMetadata, UpsertDesignParams } from "./interface";
+import type {
+  Db,
+  DesignMetadata,
+  StoredGenerateRequestStatus,
+  UpsertDesignParams,
+} from "./interface";
 
 export class PostgresDb implements Db {
   private pool: Pool;
@@ -35,5 +40,76 @@ export class PostgresDb implements Db {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  }
+
+  async upsertGenerateRequestStatus(status: StoredGenerateRequestStatus): Promise<void> {
+    await this.pool.query(
+      `insert into generate_requests (
+         request_id,
+         started_at,
+         completed_at,
+         queue_position,
+         failed_at,
+         saved_at,
+         error,
+         result,
+         processing
+       ) values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+       on conflict (request_id) do update
+         set started_at = excluded.started_at,
+             completed_at = excluded.completed_at,
+             queue_position = excluded.queue_position,
+             failed_at = excluded.failed_at,
+             saved_at = excluded.saved_at,
+             error = excluded.error,
+             result = excluded.result,
+             processing = excluded.processing`,
+      [
+        status.requestId,
+        status.startedAt,
+        status.completedAt,
+        status.queuePosition,
+        status.failedAt,
+        status.savedAt,
+        status.error,
+        JSON.stringify(status.result),
+        status.processing,
+      ],
+    );
+  }
+
+  async getGenerateRequestStatus(requestId: string): Promise<StoredGenerateRequestStatus | null> {
+    const result = await this.pool.query(
+      `select
+         request_id,
+         started_at,
+         completed_at,
+         queue_position,
+         failed_at,
+         saved_at,
+         error,
+         result,
+         processing
+       from generate_requests
+       where request_id = $1`,
+      [requestId],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      requestId: row.request_id,
+      startedAt: Number(row.started_at),
+      completedAt: row.completed_at === null ? null : Number(row.completed_at),
+      queuePosition: row.queue_position,
+      failedAt: row.failed_at === null ? null : Number(row.failed_at),
+      savedAt: row.saved_at === null ? null : Number(row.saved_at),
+      error: row.error,
+      result: row.result,
+      processing: row.processing,
+    };
+  }
+
+  async deleteGenerateRequestStatus(requestId: string): Promise<void> {
+    await this.pool.query(`delete from generate_requests where request_id = $1`, [requestId]);
   }
 }
