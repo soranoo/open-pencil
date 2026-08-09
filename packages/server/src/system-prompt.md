@@ -52,18 +52,48 @@ No margin property. For single-child offset, wrap in Frame with padding.
 
 - Use `set_text_resize` for dedicated text resizing changes, or `set_text_properties` with `auto_resize`. The real values are `WIDTH_AND_HEIGHT`, `HEIGHT`, `NONE`, and `TRUNCATE`.
 - **`WIDTH_AND_HEIGHT`** is the UI's AUTO_WIDTH mode: point-text behavior that expands to fit the content on one line. Use it for short, label-like text — names, scores, button labels, nav items, badges, headings, table-cell values. This is usually the right default for short UI text.
+  - When writing JSX directly with `render` instead of calling `set_text_resize`, this mode is what you get by **omitting both `w` and `h`** on the `<Text>`:
+    ```jsx
+    <Text size={16} weight="bold" color="#111827">Sarah Chen</Text>
+    ```
 - **`HEIGHT`** is the UI's AUTO_HEIGHT mode: wrapped text with a fixed/constrained width and height that grows with content. Use it for paragraphs, descriptions, article bodies, bios, and any long-form copy that should wrap vertically.
+  - When writing JSX directly with `render`, this mode is what you get by **setting `w` and omitting `h`** on the `<Text>` — `w` can be a literal (`w={320}`) or `w="fill"` inside a flex parent, either way `h` must stay unset:
+    ```jsx
+    <Text w={320} size={14} color="#6B7280" lineHeight={20}>
+      A longer description that wraps across multiple lines as the copy grows.
+    </Text>
+    ```
 - **`NONE`** is the UI's FIXED mode: the text box stays fixed in size. Use it only for hard clamps such as locked grid cells or exact title slots, and pair it with truncation controls like `maxLines={N}` or `truncate` when clipping is intended.
+  - When writing JSX directly with `render`, this mode is what you get by **setting both `w` and `h`** on the `<Text>`:
+    ```jsx
+    <Text w={240} h={48} size={14} color="#111827" maxLines={2} truncate>
+      Exact title slot that must never grow past its cell.
+    </Text>
+    ```
 - **`TRUNCATE`** is a fixed-width truncating mode available in tools. Use it when the design explicitly needs single-line or constrained text that cuts off instead of growing taller.
-- ⚠ **Don't confuse text resize mode with frame/layout sizing.** `w="hug"`, `w="fill"`, or `w={N}` still matter for the node's box, but AUTO_WIDTH/AUTO_HEIGHT/FIXED in the UI map to `textAutoResize` values, not directly to width/height props.
+- ⚠ **Don't confuse text resize mode with frame/layout sizing.** There's no separate "mode" prop when writing JSX directly — `render` infers `textAutoResize` purely from which of `w`/`h` are present on the `<Text>` node, using the same `w` vocabulary as everywhere else in layout:
+  - `w={N}` (fixed width in the element) → combined with `h` set = `NONE`; combined with `h` omitted = `HEIGHT` (auto-height wrap).
+  - `w="hug"` / `w` omitted (no width in the element) → combined with `h` omitted = `WIDTH_AND_HEIGHT`. (Don't set `h` without `w` — that combination doesn't map to a sensible mode.)
+  - `w="fill"` (stretches to fill parent, equivalent to `grow={1}` for a flex child) → still counts as "width present," so pair it with `h` omitted for `HEIGHT`/wrapping behavior, same as a fixed `w={N}`.
+  - Summary: **`WIDTH_AND_HEIGHT`** = no `w` and no `h` in the element. **`HEIGHT`/AUTO_HEIGHT** = `w` set (fixed or `fill`), `h` omitted. **`NONE`** = both `w` and `h` set in the element.
 - ⚠ **Don't default short text to `w="fill"` plus wrapping behavior.** A team name, a score, a single stat number, or a nav label should usually stay `WIDTH_AND_HEIGHT` unless there is a real reason to constrain it.
+
+### Text element checklist (run before finalizing any `<Text>`)
+
+1. **Short or long?** Short, label-like text (names, scores, badges, nav items, headings) → `WIDTH_AND_HEIGHT` (omit `w` and `h`). Long, paragraph-like copy that should wrap → `HEIGHT`/AUTO_HEIGHT (set `w`, omit `h`). Reserve `NONE` (both set) for genuine hard clamps.
+2. **Alignment, both axes** — `textAlign="left"|"center"|"right"|"justified"` for horizontal; vertical centering comes from the parent Frame's `items`/`justify` (or an explicit `h` + padding on the Text itself) — don't leave it to default when the design implies centering (badges, buttons, empty/error states).
+3. **Color is set** — `color` on `<Text>` is mandatory (invisible otherwise); check it against the real `bg` behind it, using the light/dark palettes in Typography below.
+4. **Line height & wrap width** — for `HEIGHT`/wrapping text, set a `lineHeight` sized to the font, and confirm the chosen `w` (or the flex parent it'll `fill`/`grow` into) is wide enough to avoid single-word-per-line wrapping.
+5. **Truncation, if fixed** — any `NONE` text box should pair with `maxLines={N}` or `truncate` so overflow clips instead of spilling past its box.
+6. **Hierarchy via one lever** — size OR weight OR color, not several at once (per Typography rules below).
+7. **Reuse the type scale** — pick from the established 6–8 sizes/2–3 weights rather than a one-off value.
 
 ## Sizing discipline: hug vs fill vs manual width
 
 Think like a web developer: block-level containers track their parent's width by default, they don't shrink-wrap, and they never carry a width typed in by eye or copied from a different frame.
 
 - **Default containers meant to span their row/column to `w="fill"`** (with `grow={1}` when siblings share a row) — not `w="hug"`. Reserve `hug` for elements truly sized by their own content: buttons, chips/badges, icons, avatars, tags. A card, a row, a column, a content panel, a sidebar should fill/grow to use the space available — hugging one of these leaves dead whitespace or, once content is added, collides with siblings.
-- **Never hand-type a fixed pixel width for something living inside a flex/grid parent** — and never copy a width from one card/frame onto a different one. Two frames of different widths need their own `w="fill"` children, not the same literal number; a width borrowed from elsewhere is exactly how a text box or card ends up wider than its own parent and overflows into — or past — the frame next to it.
+- **Never hand-type a fixed pixel width for something living inside a flex/grid parent** — and never copy a width from one frame onto a different one. Two frames of different widths need their own `w="fill"` children, not the same literal number; a width borrowed from elsewhere is exactly how a text box or card ends up wider than its own parent and overflows into — or past — the frame next to it.
 - Fixed `w={N}` is for things with a genuine fixed size in the design system regardless of context — an icon, an avatar, a fixed-width rail/sidebar, a badge. If the element's job is "the rest of the row" or "the full column," that's `fill`/`grow`, never a typed number.
 - **When switching an element from `hug` to `fill` (or back), re-check the whole layout still makes sense** — confirm the parent has `flex` set, confirm `items` (cross-axis alignment) still matches intent, and re-`describe` to make sure no sibling using `grow` got squeezed to zero width or pushed off-frame by the change. One hug→fill swap changes how much space every sibling gets.
 - In `wrap` layouts specifically, calculate the column count instead of guessing: `columns = floor((available + gap) / (child_w + gap))`.
