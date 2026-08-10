@@ -12,6 +12,7 @@ import {
   setTextProperties,
   updateNode
 } from './modify'
+import { checkoutPlanTask, createPlanTask, listPlanTasks, removePlanTask } from './plan/tasks'
 import { findNodes, getJsx, getNode, getSelection } from './read'
 import type { ToolDef } from './schema'
 import { stockPhoto } from './stock-photo'
@@ -23,6 +24,11 @@ import { viewportZoomToFit } from './vector'
  * Covers 90%+ of design sessions: render, describe, modify, structure, icons.
  */
 export const CORE_TOOLS: ToolDef[] = [
+  // Plan
+  createPlanTask,
+  removePlanTask,
+  checkoutPlanTask,
+  listPlanTasks,
   // Read
   getSelection,
   getNode,

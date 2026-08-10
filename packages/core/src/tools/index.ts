@@ -19,3 +19,12 @@ export {
 } from './analyze/overlaps/params'
 export { setPexelsApiKey, setUnsplashAccessKey } from './stock-photo'
 export { importSvg } from './create'
+export { createPlanTask, removePlanTask, checkoutPlanTask, listPlanTasks } from './plan/tasks'
+export {
+  MemoryPlanStore,
+  KvPlanStore,
+  generatePlanTaskId,
+  getPlanStore,
+  setPlanStore
+} from './plan/store'
+export type { PlanTask, PlanStatus, PlanStore, KvLike } from './plan/store'
