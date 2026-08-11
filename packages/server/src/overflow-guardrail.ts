@@ -8,13 +8,52 @@ export interface OverflowGuardrailOptions {
   nodeIds?: string[];
 }
 
+function getPositionRelativeToAncestor(
+  graph: SceneGraph,
+  node: SceneNode,
+  ancestor: SceneNode,
+): { x: number; y: number } | null {
+  let current = node.parentId ? graph.getNode(node.parentId) : undefined;
+  let x = node.x;
+  let y = node.y;
+
+  while (current && current.id !== ancestor.id) {
+    x += current.x;
+    y += current.y;
+    current = current.parentId ? graph.getNode(current.parentId) : undefined;
+  }
+
+  return current?.id === ancestor.id ? { x, y } : null;
+}
+
+function getTrailingPaddingToAncestor(
+  graph: SceneGraph,
+  node: SceneNode,
+  ancestor: SceneNode,
+): number | null {
+  let current = node.parentId ? graph.getNode(node.parentId) : undefined;
+  let padding = 0;
+
+  while (current && current.id !== ancestor.id) {
+    padding += Math.max(0, current.paddingRight);
+    current = current.parentId ? graph.getNode(current.parentId) : undefined;
+  }
+
+  if (current?.id !== ancestor.id) return null;
+  return padding + Math.max(0, ancestor.paddingRight);
+}
+
 function fitTextToParent(graph: SceneGraph, child: SceneNode, parent: SceneNode): boolean {
   const paddingLeft = Math.max(0, parent.paddingLeft);
-  const paddingRight = Math.max(0, parent.paddingRight);
+  const position = getPositionRelativeToAncestor(graph, child, parent);
+  const trailingPadding = getTrailingPaddingToAncestor(graph, child, parent);
+  if (!position || trailingPadding === null) return false;
+
   const minX = paddingLeft;
-  const maxX = Math.max(minX, parent.width - paddingRight - 1);
-  const x = Math.min(Math.max(child.x, minX), maxX);
-  const availableWidth = Math.max(1, parent.width - x - paddingRight);
+  const maxX = Math.max(minX, parent.width - trailingPadding - 1);
+  const targetX = Math.min(Math.max(position.x, minX), maxX);
+  const x = child.x + targetX - position.x;
+  const availableWidth = Math.max(1, parent.width - targetX - trailingPadding);
   const width = Math.min(child.width, availableWidth);
 
   if (x === child.x && width === child.width && child.textAutoResize === "HEIGHT") {

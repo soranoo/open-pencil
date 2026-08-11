@@ -6,7 +6,7 @@ import {
   computeOverflowDetections
 } from '@open-pencil/core/tools/analyze/overflow'
 
-import { frame, pageId, rect } from './overlaps/helpers'
+import { frame, pageId, rect, text } from './overlaps/helpers'
 
 describe('analyze overflow', () => {
   test('detects child wider than parent', () => {
@@ -18,9 +18,9 @@ describe('analyze overflow', () => {
     const result = computeOverflowDetections(graph)
     expect(result.summary.overflowCount).toBe(1)
     expect(result.summary.axisCounts.x).toBe(1)
-    expect(result.overflows[0].overflowX).toBe(true)
-    expect(result.overflows[0].overflowY).toBe(false)
-    expect(result.overflows[0].widthDelta).toBe(40)
+    expect(result.groups[0].overflows[0].overflowX).toBe(true)
+    expect(result.groups[0].overflows[0].overflowY).toBe(false)
+    expect(result.groups[0].overflows[0].widthDelta).toBe(40)
   })
 
   test('detects child taller than parent', () => {
@@ -32,9 +32,9 @@ describe('analyze overflow', () => {
     const result = computeOverflowDetections(graph)
     expect(result.summary.overflowCount).toBe(1)
     expect(result.summary.axisCounts.y).toBe(1)
-    expect(result.overflows[0].overflowX).toBe(false)
-    expect(result.overflows[0].overflowY).toBe(true)
-    expect(result.overflows[0].heightDelta).toBe(40)
+    expect(result.groups[0].overflows[0].overflowX).toBe(false)
+    expect(result.groups[0].overflows[0].overflowY).toBe(true)
+    expect(result.groups[0].overflows[0].heightDelta).toBe(40)
   })
 
   test('detects child larger on both axes', () => {
@@ -46,8 +46,8 @@ describe('analyze overflow', () => {
     const result = computeOverflowDetections(graph)
     expect(result.summary.overflowCount).toBe(1)
     expect(result.summary.axisCounts.both).toBe(1)
-    expect(result.overflows[0].overflowX).toBe(true)
-    expect(result.overflows[0].overflowY).toBe(true)
+    expect(result.groups[0].overflows[0].overflowX).toBe(true)
+    expect(result.groups[0].overflows[0].overflowY).toBe(true)
   })
 
   test('supports parent scope descendants', () => {
@@ -62,7 +62,24 @@ describe('analyze overflow', () => {
       parent_scope: 'descendants'
     })
     expect(result.summary.overflowCount).toBe(1)
-    expect(result.overflows[0].parent.id).toBe(card.id)
+    expect(result.groups[0].parent.id).toBe(card.id)
+  })
+
+  test('detects text overflowing an ancestor after an intermediate frame expands', () => {
+    const graph = new SceneGraph()
+    const page = pageId(graph)
+    const viewport = frame(graph, 'Viewport', page, 0, 0, 390, 300)
+    const expandedContent = frame(graph, 'Expanded Content', viewport.id, 0, 0, 884, 100)
+    const title = text(graph, 'Title', expandedContent.id, 24, 0, 836, 30)
+
+    const result = computeOverflowDetections(graph)
+    const titleOverflow = result.groups
+      .flatMap((group) => group.overflows.map((overflow) => ({ group, overflow })))
+      .find(({ overflow }) => overflow.child.id === title.id)
+
+    expect(titleOverflow?.group.parent.id).toBe(viewport.id)
+    expect(titleOverflow?.overflow.overflowX).toBe(true)
+    expect(titleOverflow?.overflow.widthDelta).toBe(470)
   })
 
   test('tool executes against current page by default', () => {

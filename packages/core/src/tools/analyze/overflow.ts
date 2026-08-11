@@ -59,6 +59,11 @@ export interface AnalyzeOverflowResult {
   summary: AnalyzeOverflowSummary
 }
 
+interface DetectedOverflow {
+  item: OverflowItem
+  parentId: string
+}
+
 const OVERFLOW_GUIDANCE =
   'Check whether this overflow is intentional (hero bleed, decorative art, carousel, modal) or a layout bug. If unintentional, resize the child or parent instead of relying on hidden clipping.'
 
@@ -171,11 +176,81 @@ function compareAgainstParent(
   }
 }
 
-function groupOverflows(graph: SceneGraph, overflows: OverflowItem[]): OverflowGroup[] {
+function getPositionRelativeToAncestor(
+  graph: SceneGraph,
+  node: SceneNode,
+  ancestor: SceneNode
+): { x: number; y: number } | null {
+  let current = node.parentId ? graph.getNode(node.parentId) : undefined
+  let x = node.x
+  let y = node.y
+
+  while (current && current.id !== ancestor.id) {
+    x += current.x
+    y += current.y
+    current = current.parentId ? graph.getNode(current.parentId) : undefined
+  }
+
+  return current?.id === ancestor.id ? { x, y } : null
+}
+
+function compareTextAgainstAncestor(
+  graph: SceneGraph,
+  child: SceneNode,
+  ancestor: SceneNode
+): OverflowItem | null {
+  if (ancestor.type === 'CANVAS' || ancestor.width <= 0 || ancestor.height <= 0) {
+    return null
+  }
+
+  const position = getPositionRelativeToAncestor(graph, child, ancestor)
+  if (!position) return null
+
+  const availableWidth = ancestor.width - position.x
+  const widthDelta = child.width - availableWidth
+  const overflowX = widthDelta > 0
+
+  if (!overflowX) return null
+
+  const widthRatio = child.width / Math.max(1, availableWidth)
+  const heightRatio = 1
+  const axisText = 'width'
+  const deltas: string[] = []
+  deltas.push(`width +${Math.round(widthDelta)}px`)
+
+  return {
+    child: toNodeSummary(child),
+    overflowX,
+    overflowY: false,
+    widthDelta: Math.round(Math.max(0, widthDelta)),
+    heightDelta: 0,
+    widthRatio: Math.round(widthRatio * 1000) / 1000,
+    heightRatio: Math.round(heightRatio * 1000) / 1000,
+    message: `Child "${child.name}" is larger on ${axisText} (${deltas.join(', ')})`
+  }
+}
+
+function findTextAncestorOverflow(
+  graph: SceneGraph,
+  child: SceneNode
+): DetectedOverflow | null {
+  const parent = child.parentId ? graph.getNode(child.parentId) : undefined
+  let ancestor = parent?.parentId ? graph.getNode(parent.parentId) : undefined
+
+  while (ancestor && ancestor.type !== 'CANVAS') {
+    const overflow = compareTextAgainstAncestor(graph, child, ancestor)
+    if (overflow) return { item: overflow, parentId: ancestor.id }
+    ancestor = ancestor.parentId ? graph.getNode(ancestor.parentId) : undefined
+  }
+
+  return null
+}
+
+function groupOverflows(graph: SceneGraph, overflows: DetectedOverflow[]): OverflowGroup[] {
   const groups = new Map<string, OverflowGroup>()
 
-  for (const overflow of overflows) {
-    const parentId = overflow.child.parentId
+  for (const detected of overflows) {
+    const { item: overflow, parentId } = detected
     const parent = parentId ? graph.getNode(parentId) : undefined
     if (!parent) continue
 
@@ -223,7 +298,7 @@ export function computeOverflowDetections(
 
   let totalNodes = 0
   let analyzedNodes = 0
-  const overflows: OverflowItem[] = []
+  const overflows: DetectedOverflow[] = []
 
   for (const node of graph.getAllNodes()) {
     if (node.type === 'CANVAS') continue
@@ -256,12 +331,17 @@ export function computeOverflowDetections(
     if (!parent) continue
 
     const overflow = compareAgainstParent(node, parent)
-    if (overflow) overflows.push(overflow)
+    if (overflow) overflows.push({ item: overflow, parentId: parent.id })
+
+    if (node.type === 'TEXT' && !overflow) {
+      const ancestorOverflow = findTextAncestorOverflow(graph, node)
+      if (ancestorOverflow) overflows.push(ancestorOverflow)
+    }
   }
 
   overflows.sort((a, b) => {
-    const aMax = Math.max(a.widthDelta, a.heightDelta)
-    const bMax = Math.max(b.widthDelta, b.heightDelta)
+    const aMax = Math.max(a.item.widthDelta, a.item.heightDelta)
+    const bMax = Math.max(b.item.widthDelta, b.item.heightDelta)
     return bMax - aMax
   })
 
@@ -269,7 +349,7 @@ export function computeOverflowDetections(
   const limitedOverflows = overflows.slice(0, limit)
   const groups = groupOverflows(graph, limitedOverflows)
   const axisCounts = { x: 0, y: 0, both: 0 }
-  for (const item of overflows) {
+  for (const { item } of overflows) {
     if (item.overflowX && item.overflowY) axisCounts.both++
     else if (item.overflowX) axisCounts.x++
     else if (item.overflowY) axisCounts.y++
