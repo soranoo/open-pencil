@@ -4,6 +4,8 @@ import z from "zod";
 import { runPrompt } from "@/chat-engine.js";
 import { loadDocument } from "@/document.js";
 import { env } from "@/env.js";
+import { runOverflowGuardrail } from "@/overflow-guardrail.js";
+import { runOverlapGuardrail } from "@/overlap-guardrail.js";
 import { createSession, getSession, persistSession } from "@/session-manager.js";
 import { getStorage } from "@/storage/index.js";
 
@@ -103,6 +105,19 @@ export async function processGenerateRequest(
           designId: session.id,
         },
       );
+
+  const repairedOverlapNodeIds = await runOverlapGuardrail(session.doc);
+  console.log(`[agent] repaired ${repairedOverlapNodeIds.length} overlapping nodes`, {
+    repairedOverlapNodeIds,
+    requestId: logContext?.requestId ?? null,
+    designId: session.id,
+  });
+  const repairedOverflowNodeIds = runOverflowGuardrail(session.doc);
+  console.log(`[agent] repaired ${repairedOverflowNodeIds.length} overflowing text nodes`, {
+    repairedOverflowNodeIds,
+    requestId: logContext?.requestId ?? null,
+    designId: session.id,
+  });
 
   session.messages = result.messages;
   session.savedAt = null;
