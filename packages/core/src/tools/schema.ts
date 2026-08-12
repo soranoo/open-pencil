@@ -10,7 +10,15 @@ import type { SceneNode } from '@open-pencil/scene-graph'
 
 import type { FigmaAPI, FigmaNodeProxy } from '#core/figma-api'
 
-export type ParamType = 'string' | 'number' | 'boolean' | 'color' | 'string[]'
+export type ParamType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'color'
+  | 'string[]'
+  | 'string[][]'
+  | 'object'
+  | 'object[]'
 
 export interface ParamDef {
   type: ParamType
@@ -20,6 +28,7 @@ export interface ParamDef {
   enum?: string[]
   min?: number
   max?: number
+  properties?: Record<string, ParamDef>
 }
 
 export interface ToolDef {
@@ -30,22 +39,32 @@ export interface ToolDef {
   execute: (figma: FigmaAPI, args: Record<string, unknown>) => unknown
 }
 
-type ResolvedType<T extends ParamType> = T extends 'string'
+type ResolvedValue<P extends ParamDef> = P['type'] extends 'string'
   ? string
-  : T extends 'number'
+  : P['type'] extends 'number'
     ? number
-    : T extends 'boolean'
+    : P['type'] extends 'boolean'
       ? boolean
-      : T extends 'color'
+      : P['type'] extends 'color'
         ? string
-        : T extends 'string[]'
+        : P['type'] extends 'string[]'
           ? string[]
-          : never
+          : P['type'] extends 'string[][]'
+            ? string[][]
+          : P['type'] extends 'object'
+            ? P['properties'] extends Record<string, ParamDef>
+              ? ResolvedParams<P['properties']>
+              : Record<string, unknown>
+            : P['type'] extends 'object[]'
+              ? P['properties'] extends Record<string, ParamDef>
+                ? Array<ResolvedParams<P['properties']>>
+                : Array<Record<string, unknown>>
+              : never
 
 type ResolvedParams<P extends Record<string, ParamDef>> = {
-  [K in keyof P as P[K]['required'] extends true ? K : never]: ResolvedType<P[K]['type']>
+  [K in keyof P as P[K]['required'] extends true ? K : never]: ResolvedValue<P[K]>
 } & {
-  [K in keyof P as P[K]['required'] extends true ? never : K]?: ResolvedType<P[K]['type']>
+  [K in keyof P as P[K]['required'] extends true ? never : K]?: ResolvedValue<P[K]>
 }
 
 export function defineTool<P extends Record<string, ParamDef>>(def: {

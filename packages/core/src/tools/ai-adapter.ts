@@ -312,7 +312,18 @@ function paramToValibot(v: typeof valibot, param: ParamDef): unknown {
     },
     boolean: () => v.boolean(),
     color: () => v.pipe(v.string(), v.description('Color value (hex like #ff0000 or #ff000080)')),
-    'string[]': () => v.pipe(v.array(v.string()), v.minLength(1))
+    'string[]': () => v.pipe(v.array(v.string()), v.minLength(1)),
+    'string[][]': () =>
+      v.pipe(
+        v.array(v.pipe(v.array(v.string()), v.minLength(1))),
+        v.minLength(1)
+      ),
+    object: () => v.lazy(() => v.object(propertiesToValibot(v, param.properties))),
+    'object[]': () =>
+      v.pipe(
+        v.array(v.lazy(() => v.object(propertiesToValibot(v, param.properties)))),
+        v.minLength(1)
+      )
   }
 
   let schema = typeMap[param.type]()
@@ -326,4 +337,13 @@ function paramToValibot(v: typeof valibot, param: ParamDef): unknown {
   }
 
   return schema
+}
+
+function propertiesToValibot(
+  v: typeof valibot,
+  properties: Record<string, ParamDef> | undefined
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(properties ?? {}).map(([key, child]) => [key, paramToValibot(v, child)])
+  )
 }

@@ -112,13 +112,11 @@ async function processGenerateDelivery(
   delivery: QueueDelivery<QueuedGenerateRequest>,
 ): Promise<void> {
   await markProcessing(delivery.payload.requestId);
-  const processingStartedAt = Date.now();
 
   try {
     const response = await processGenerateRequest(delivery.payload, {
       requestId: delivery.payload.requestId,
     });
-    const timeUsedMs = Date.now() - processingStartedAt;
     let savedAt: number | null = null;
     let completionError: string | null = null;
 
@@ -137,7 +135,7 @@ async function processGenerateDelivery(
     }
 
     await delivery.ack();
-    await markCompleted(delivery.payload.requestId, { ...response, timeUsedMs }, savedAt, completionError);
+    await markCompleted(delivery.payload.requestId, { ...response }, savedAt, completionError);
   } catch (error) {
     await delivery.reject(false);
     const message = error instanceof Error ? error.message : "Generation failed";

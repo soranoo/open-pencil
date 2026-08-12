@@ -4,12 +4,8 @@ import z from "zod";
 import { runPrompt } from "@/chat-engine.js";
 import { loadDocument } from "@/document.js";
 import { env } from "@/env.js";
-import { runFixedHeightGuardrail } from "./fixed-height-guardrail.js";
-import { runOverflowGuardrail } from "@/overflow-guardrail.js";
-import { runOverlapGuardrail } from "@/overlap-guardrail.js";
 import { createSession, getSession, persistSession } from "@/session-manager.js";
 import { getStorage } from "@/storage/index.js";
-import { computeAllLayouts } from "@open-pencil/core";
 
 export interface GenerateRequest {
   prompt: string;
@@ -89,6 +85,8 @@ export async function processGenerateRequest(
     usage: {} as LanguageModelUsage,
   };
 
+  const startedAt = Date.now();
+
   const result = env.USE_AI_STUB
     ? stubResult
     : await runPrompt(
@@ -108,31 +106,6 @@ export async function processGenerateRequest(
         },
       );
 
-  const repairedFixedHeightBoardIds = runFixedHeightGuardrail(session.doc);
-  console.log(
-    `[agent] expanded ${repairedFixedHeightBoardIds.length} fixed-height boards`,
-    {
-      repairedFixedHeightBoardIds,
-      requestId: logContext?.requestId ?? null,
-      designId: session.id,
-    },
-  );
-  computeAllLayouts(session.doc.graph, session.doc.figma.currentPageId);
-  const repairedOverlapNodeIds = await runOverlapGuardrail(session.doc);
-  console.log(`[agent] repaired ${repairedOverlapNodeIds.length} overlapping nodes`, {
-    repairedOverlapNodeIds,
-    requestId: logContext?.requestId ?? null,
-    designId: session.id,
-  });
-  computeAllLayouts(session.doc.graph, session.doc.figma.currentPageId);
-  const repairedOverflowNodeIds = runOverflowGuardrail(session.doc);
-  console.log(`[agent] repaired ${repairedOverflowNodeIds.length} overflowing text nodes`, {
-    repairedOverflowNodeIds,
-    requestId: logContext?.requestId ?? null,
-    designId: session.id,
-  });
-  computeAllLayouts(session.doc.graph, session.doc.figma.currentPageId);
-
   session.messages = result.messages;
   session.savedAt = null;
   await persistSession(session);
@@ -142,6 +115,7 @@ export async function processGenerateRequest(
     summary: result.text,
     toolCallCount: result.toolLog.length,
     hitStepLimit: result.hitStepLimit,
+    timeUsedMs: Date.now() - startedAt,
     toolLog: result.toolLog.map((entry) => ({ tool: entry.tool, mutates: entry.mutates })),
     usage: result.usage,
   };

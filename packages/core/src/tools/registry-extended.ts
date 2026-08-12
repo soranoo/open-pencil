@@ -51,6 +51,7 @@ import {
 } from './read'
 import type { ToolDef } from './schema'
 import {
+  arrangeRows,
   arrangeNodes,
   cloneNode,
   flattenNodes,
@@ -153,6 +154,7 @@ export const EXTENDED_TOOLS: ToolDef[] = [
   nodeTree,
   nodeBindings,
   nodeReplaceWith,
+  arrangeRows,
   arrangeNodes,
   // Variables
   listVariables,

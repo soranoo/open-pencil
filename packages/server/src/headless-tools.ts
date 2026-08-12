@@ -18,10 +18,22 @@
 import { valibotSchema } from "@ai-sdk/valibot";
 import type { FigmaAPI } from "@open-pencil/core/figma-api";
 import { computeAllLayouts } from "@open-pencil/core/layout";
-import { CORE_TOOLS, EXTENDED_TOOLS, toolsToAI } from "@open-pencil/core/tools";
+import {
+  CORE_TOOLS,
+  EXTENDED_TOOLS,
+  KvPlanStore,
+  defineTool,
+  setPlanStore,
+  toolsToAI,
+} from "@open-pencil/core/tools";
 import type { ToolLogEntry } from "@open-pencil/core/tools";
 import { tool, type ToolSet } from "ai";
 import * as v from "valibot";
+
+import { runFixedHeightGuardrail } from "./fixed-height-guardrail.js";
+import { runOverflowGuardrail } from "./overflow-guardrail.js";
+import { runOverlapGuardrail } from "./overlap-guardrail.js";
+import { getKvStore } from "@/kv/index.js";
 
 export const MAX_AGENT_STEPS = 50;
 
@@ -35,9 +47,62 @@ interface AgentLogContext {
   designId?: string;
 }
 
+const fixFixedHeightTool = defineTool({
+  name: "fix_fixed_height",
+  description:
+    "Expand fixed-height boards so they can fit their content before finalizing. Use this when a board is too short for its children.",
+  mutates: true,
+  params: {
+    node_ids: {
+      type: "string[]",
+      description: "Optional list of board node IDs to repair; if omitted, all boards on the page are checked.",
+    },
+  },
+  execute: (figma, args) => {
+    const doc = { graph: figma.graph, figma };
+    return runFixedHeightGuardrail(doc, { nodeIds: args.node_ids });
+  },
+});
+
+const fixOverlapTool = defineTool({
+  name: "fix_overlap",
+  description:
+    "Resolve overlapping children by auto-stacking or reflowing them before finalizing a board.",
+  mutates: true,
+  params: {},
+  execute: async (figma) => {
+    const doc = { graph: figma.graph, figma };
+    return await runOverlapGuardrail(doc);
+  },
+});
+
+const fixOverflowTool = defineTool({
+  name: "fix_overflow",
+  description:
+    "Shrink or reflow text nodes that overflow their parent so the board remains stable before finalizing.",
+  mutates: true,
+  params: {
+    node_ids: {
+      type: "string[]",
+      description: "Optional list of text node IDs to repair; if omitted, all overflowing text nodes are checked.",
+    },
+  },
+  execute: (figma, args) => {
+    const doc = { graph: figma.graph, figma };
+    return runOverflowGuardrail(doc, { nodeIds: args.node_ids });
+  },
+});
+
 const HEADLESS_TOOLS = [
   ...CORE_TOOLS,
-  ...EXTENDED_TOOLS.filter((tool) => tool.name === "analyze_overflow"),
+  ...EXTENDED_TOOLS.filter((tool) =>
+    ["analyze_overflow", "arrange", "arrange_rows"].includes(tool.name),
+  ),
+  fixFixedHeightTool,
+  fixOverlapTool,
+  fixOverflowTool,
+  // createPlanTask,
+  // createPlanTasks,
 ];
 
 export function createRunState(): RunState {
@@ -53,6 +118,12 @@ export function createHeadlessTools(
   runState: RunState,
   logContext: AgentLogContext = {},
 ): ToolSet {
+  // Plan tools default to an in-process MemoryPlanStore (see @open-pencil/core/tools).
+  // Swap in the KV-backed store so the plan survives across requests/replicas,
+  // scoped to this document (or the request, if the design hasn't been saved yet).
+  const planNamespace = logContext.designId ?? logContext.requestId ?? "default";
+  setPlanStore(new KvPlanStore(getKvStore(), planNamespace));
+
   return toolsToAI(
     HEADLESS_TOOLS,
     {
