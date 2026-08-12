@@ -136,7 +136,7 @@ function relativeAncestorPath(graph: SceneGraph, node: SceneNode): string {
   let current = node.parentId ? graph.getNode(node.parentId) : undefined
 
   while (current && current.type !== 'CANVAS') {
-    ancestors.unshift(`"${current.name}"`)
+    ancestors.unshift(`"${current.name}"[id: ${current.id}]`)
     current = current.parentId ? graph.getNode(current.parentId) : undefined
   }
 
@@ -172,7 +172,7 @@ function compareAgainstParent(
     heightDelta: Math.round(Math.max(0, heightDelta)),
     widthRatio: Math.round(widthRatio * 1000) / 1000,
     heightRatio: Math.round(heightRatio * 1000) / 1000,
-    message: `Child "${child.name}" is larger on ${axisText} (${deltas.join(', ')})`
+    message: `Child "${child.name}" (id: ${child.id}) is larger on ${axisText} (${deltas.join(', ')})`
   }
 }
 
@@ -226,7 +226,7 @@ function compareTextAgainstAncestor(
     heightDelta: 0,
     widthRatio: Math.round(widthRatio * 1000) / 1000,
     heightRatio: Math.round(heightRatio * 1000) / 1000,
-    message: `Child "${child.name}" is larger on ${axisText} (${deltas.join(', ')})`
+    message: `Child "${child.name}" (id: ${child.id}) is larger on ${axisText} (${deltas.join(', ')})`
   }
 }
 
