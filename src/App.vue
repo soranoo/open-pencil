@@ -5,6 +5,7 @@ import { useHead } from '@unhead/vue'
 import { TooltipProvider } from 'reka-ui'
 
 import { provideEditor, useI18n } from '@open-pencil/vue'
+import { IS_DISABLE_SETTINGS_MODAL } from '@/app/config/frontend-env'
 import AppShell from '@/components/Shell/AppShell.vue'
 import AppToast from '@/components/Shell/AppToast.vue'
 import PublishLibraryDialog from '@/components/libraries/PublishLibraryDialog.vue'
@@ -44,7 +45,7 @@ onMounted(() => {
     <AppShell>
       <RouterView />
     </AppShell>
-    <SettingsDialog />
+    <SettingsDialog v-if="!IS_DISABLE_SETTINGS_MODAL" />
     <RecoveryDialog />
     <PublishLibraryDialog />
     <LibraryUpdateReviewDialog />

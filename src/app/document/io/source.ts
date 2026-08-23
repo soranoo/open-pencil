@@ -149,6 +149,7 @@ export function createDocumentSourceActions({
   }
 
   return {
+    getFigFile: buildFigFile,
     setDocumentSource,
     setStorageDocumentSource,
     setPlannedFilePath,

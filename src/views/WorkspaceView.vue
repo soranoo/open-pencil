@@ -25,6 +25,12 @@ import SafariBanner from '@/components/SafariBanner.vue'
 import TabBar from '@/components/TabBar.vue'
 import EditorWorkspace from '@/components/editor/EditorWorkspace.vue'
 import HomeWorkspace from '@/components/home/HomeWorkspace.vue'
+import { connectRemoteControl } from '@/app/automation/remote-control'
+import {
+  IS_BACKEND_MODE,
+  IS_DISABLE_COLLABORATION
+} from '@/app/config/frontend-env'
+import { designAuthError, designAuthStatus } from '@/app/automation/server-bridge'
 
 const route = useRoute()
 const params = useUrlSearchParams('history')
@@ -59,6 +65,7 @@ useEventListener(
 )
 
 const fileAssociationCleanup = ref<(() => void) | null>(null)
+const remoteControlCleanup = ref<(() => void) | null>(null)
 
 interface PendingOpenFile {
   path: string
@@ -82,6 +89,10 @@ async function bindAssociatedFileOpen(): Promise<void> {
 onMounted(async () => {
   await startMCPRuntime(getActiveStore)
 
+  // Only connects when the page was opened with ?op-remote-control=1 (set by
+  // the @open-pencil/automation package). No-op in normal interactive use.
+  remoteControlCleanup.value = connectRemoteControl(params).disconnect
+
   try {
     await bindAssociatedFileOpen()
   } catch (error) {
@@ -92,16 +103,36 @@ onMounted(async () => {
 onUnmounted(() => {
   void stopMCPRuntime()
   fileAssociationCleanup.value?.()
+  remoteControlCleanup.value?.()
 })
 </script>
 
 <template>
   <div data-test-id="editor-root" class="flex h-screen w-screen flex-col">
-    <SafariBanner />
-    <FontStatusBanner />
-    <RenameSelectionDialog />
-    <TabBar />
-    <HomeWorkspace v-show="activeTab?.kind === 'home'" @new-document="createDocumentInCurrentTab" />
-    <EditorWorkspace v-if="activeTab?.kind !== 'home'" />
+    <div
+      v-if="IS_BACKEND_MODE && designAuthStatus === 'authenticating'"
+      class="flex flex-1 items-center justify-center bg-canvas px-6 text-center text-sm text-muted"
+    >
+      Authenticating design access...
+    </div>
+    <div
+      v-else-if="IS_BACKEND_MODE && designAuthStatus === 'unauth'"
+      class="flex flex-1 items-center justify-center bg-canvas px-6 text-center"
+    >
+      <div class="max-w-md rounded-xl border border-border bg-panel px-6 py-5 shadow-sm">
+        <h1 class="text-base font-medium text-surface">Design access unavailable</h1>
+        <p class="mt-2 text-sm text-muted">
+          {{ designAuthError ? 'This design link is invalid, already used, or expired.' : '' }}
+        </p>
+      </div>
+    </div>
+    <template v-else>
+      <SafariBanner />
+      <FontStatusBanner />
+      <RenameSelectionDialog />
+      <TabBar />
+      <HomeWorkspace v-show="activeTab?.kind === 'home'" @new-document="createDocumentInCurrentTab" />
+      <EditorWorkspace v-if="activeTab?.kind !== 'home'" />
+    </template>
   </div>
 </template>

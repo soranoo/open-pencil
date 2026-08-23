@@ -1,4 +1,5 @@
 import { Chat } from '@ai-sdk/vue'
+import { useIntervalFn } from '@vueuse/core'
 import { DirectChatTransport, stepCountIs, ToolLoopAgent } from 'ai'
 import type { ChatTransport, FinishReason, LanguageModel, UIMessage } from 'ai'
 import type { ComputedRef, Ref } from 'vue'
@@ -16,7 +17,13 @@ import { resolveLanguageModelID } from '@/app/ai/chat/model'
 import { buildReasoningProviderOptions, type AIProviderOptions } from '@/app/ai/chat/reasoning'
 import SYSTEM_PROMPT from '@/app/ai/chat/system-prompt.md?raw'
 import { createAIModelRuntime, resolveModelConnectionAPIKey } from '@/app/ai/models'
-import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/app/ai/tools'
+import {
+  MAX_AGENT_STEPS,
+  createAITools,
+  getStepUsages,
+  recordStepUsage,
+  resetRunSteps
+} from '@/app/ai/tools'
 import type { getActiveEditorStore } from '@/app/editor/active-store'
 
 type EditorStore = ReturnType<typeof getActiveEditorStore>
@@ -37,6 +44,16 @@ type ToolLoopTransportOptions = {
   effectiveModelID: string
   maxOutputTokens: number
   reasoningEffort: string
+}
+
+export type AIStreamUpdate = {
+  content: string
+  done: boolean
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+  }
 }
 
 const ANTHROPIC_CACHE_CONTROL = {
@@ -271,5 +288,70 @@ export function createChatSessionManager({
     markTransportDirty()
   }
 
-  return { ensureChat, resetChat, markTransportDirty, setOverrideTransport, failure, clearFailure }
+  function assistantText(messages: UIMessage[]): string {
+    const message = [...messages].reverse().find((candidate) => candidate.role === 'assistant')
+    return (
+      message?.parts
+        .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+        .map((part) => part.text)
+        .join('') ?? ''
+    )
+  }
+
+  async function sendAI(
+    text: string,
+    onUpdate: (update: AIStreamUpdate) => void
+  ): Promise<AIStreamUpdate> {
+    const currentChat = await ensureChat()
+    if (!currentChat) throw new Error('The Design model is not configured')
+    if (currentChat.status === 'submitted' || currentChat.status === 'streaming') {
+      throw new Error('An AI request is already in progress')
+    }
+    clearFailure()
+
+    const store = getActiveEditorStore()
+    const usageStart = getStepUsages(store).length
+    let lastContent = ''
+    const { pause: stopStreaming } = useIntervalFn(
+      () => {
+        const content = assistantText(currentChat.messages)
+        if (content === lastContent) return
+        lastContent = content
+        onUpdate({ content, done: false })
+      },
+      50,
+      { immediate: true }
+    )
+
+    try {
+      await currentChat.sendMessage({ text })
+    } finally {
+      stopStreaming()
+    }
+
+    const content = assistantText(currentChat.messages)
+    const usage = getStepUsages(store)
+      .slice(usageStart)
+      .reduce(
+        (total, step) => ({
+          inputTokens: total.inputTokens + step.inputTokens,
+          outputTokens: total.outputTokens + step.outputTokens,
+          totalTokens: total.totalTokens + step.inputTokens + step.outputTokens
+        }),
+        { inputTokens: 0, outputTokens: 0, totalTokens: 0 }
+      )
+    const update = { content, done: true, usage }
+    onUpdate(update)
+    return update
+  }
+
+  return {
+    ensureChat,
+    resetChat,
+    markTransportDirty,
+    setOverrideTransport,
+    sendAI,
+    failure,
+    clearFailure
+  }
 }

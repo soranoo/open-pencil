@@ -79,6 +79,7 @@ export function createDocumentIOActions(
     setPlannedFilePath: sourceActions.setPlannedFilePath,
     startWatchingCurrentFile: sourceActions.startWatchingCurrentFile,
     disposeDocumentIO: sourceActions.disposeDocumentIO,
+    getFigFile: sourceActions.getFigFile,
     openFigFile,
     openDOMFile,
     importDOMText,

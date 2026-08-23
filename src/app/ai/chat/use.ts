@@ -69,6 +69,7 @@ export function useAIChat() {
     activeTab,
     isConfigured,
     ensureChat: chatSession.ensureChat,
+    sendAI: chatSession.sendAI,
     resetChat: chatSession.resetChat,
     chatFailure: chatSession.failure,
     clearChatFailure: chatSession.clearFailure

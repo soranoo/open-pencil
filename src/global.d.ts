@@ -20,6 +20,11 @@ declare global {
   }
 
   interface Window {
+    openPencilServer?: {
+      load: (designId: string) => Promise<void>
+      save: (designId?: string) => Promise<void>
+      saveDebounced: (designId?: string) => Promise<void>
+    }
     showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>
     showSaveFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle>
     queryLocalFonts?(): Promise<

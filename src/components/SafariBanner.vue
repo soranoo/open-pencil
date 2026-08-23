@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 
+import { IS_BACKEND_MODE } from '@/app/config/frontend-env'
 import { IS_BROWSER, IS_TAURI } from '@/constants'
 import { useI18n } from '@open-pencil/vue'
 
 const { dialogs } = useI18n()
 const dismissed = useLocalStorage('safari-banner-dismissed', false)
-const show = !IS_TAURI && IS_BROWSER && !window.showSaveFilePicker
+const show = !IS_BACKEND_MODE && !IS_TAURI && IS_BROWSER && !window.showSaveFilePicker
 </script>
 
 <template>

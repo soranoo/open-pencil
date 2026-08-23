@@ -6,7 +6,8 @@ import { AUTOMATION_HTTP_PORT } from '@open-pencil/core/constants'
 import { devAutomationRoute } from '../src/app/automation/bridge/portless-route'
 import { automationPlugin } from '../src/app/automation/bridge/vite-plugin'
 
-const devAutomationAuthToken = process.env.OPENPENCIL_DEV_TOKEN ?? randomUUID()
+const configuredToken = process.env.OPENPENCIL_DEV_TOKEN?.trim()
+const devAutomationAuthToken = configuredToken || randomUUID()
 
 export function localAutomationToken(command: string): string | null {
   return command === 'serve' ? devAutomationAuthToken : null
