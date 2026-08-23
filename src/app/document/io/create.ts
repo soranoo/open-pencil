@@ -78,6 +78,7 @@ export function createDocumentIOActions(
     setStorageDocumentSource: sourceActions.setStorageDocumentSource,
     setPlannedFilePath: sourceActions.setPlannedFilePath,
     startWatchingCurrentFile: sourceActions.startWatchingCurrentFile,
+    hasUnsavedChanges: sourceActions.hasUnsavedChanges,
     disposeDocumentIO: sourceActions.disposeDocumentIO,
     getFigFile: sourceActions.getFigFile,
     openFigFile,

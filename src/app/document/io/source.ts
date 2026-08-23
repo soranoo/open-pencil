@@ -148,12 +148,17 @@ export function createDocumentSourceActions({
     recovery.disposeRecovery()
   }
 
+  function hasUnsavedChanges() {
+    return state.sceneVersion !== getSavedVersion()
+  }
+
   return {
     getFigFile: buildFigFile,
     setDocumentSource,
     setStorageDocumentSource,
     setPlannedFilePath,
     startWatchingCurrentFile,
+    hasUnsavedChanges,
     disposeDocumentIO,
     saveFigFile,
     saveFigFileAs,

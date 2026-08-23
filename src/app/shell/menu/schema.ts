@@ -1,5 +1,6 @@
 import type { EditorCommandId } from '@open-pencil/vue'
 
+import { designPermission } from '@/app/automation/server-bridge'
 import { IS_BACKEND_MODE } from '@/app/config/frontend-env'
 
 export type AppMenuTarget = 'all' | 'browser' | 'native'
@@ -36,7 +37,12 @@ export const APP_MENU_SCHEMA = [
     label: 'File',
     items: [
       ...(IS_BACKEND_MODE
-        ? [{ id: 'save', label: 'Save', shortcut: 'MOD+S' }]
+        ? [
+            ...(designPermission.value === 'write'
+              ? [{ id: 'save', label: 'Save', shortcut: 'MOD+S' }]
+              : []),
+            { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' }
+          ]
         : [
             { id: 'new', label: 'New', shortcut: 'MOD+N' },
             { id: 'open', label: 'Open…', shortcut: 'MOD+O' },

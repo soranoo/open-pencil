@@ -26,11 +26,10 @@ import TabBar from '@/components/TabBar.vue'
 import EditorWorkspace from '@/components/editor/EditorWorkspace.vue'
 import HomeWorkspace from '@/components/home/HomeWorkspace.vue'
 import { connectRemoteControl } from '@/app/automation/remote-control'
-import {
-  IS_BACKEND_MODE,
-  IS_DISABLE_COLLABORATION
-} from '@/app/config/frontend-env'
+import { IS_BACKEND_MODE, IS_DISABLE_TAB } from '@/app/config/frontend-env'
 import { designAuthError, designAuthStatus } from '@/app/automation/server-bridge'
+import UnsavedChangesBanner from '@/components/UnsavedChangesBanner.vue'
+import ReadOnlyBanner from '@/components/ReadOnlyBanner.vue'
 
 const route = useRoute()
 const params = useUrlSearchParams('history')
@@ -128,10 +127,15 @@ onUnmounted(() => {
     </div>
     <template v-else>
       <SafariBanner />
-      <FontStatusBanner />
+      <UnsavedChangesBanner v-if="IS_BACKEND_MODE" />
+      <ReadOnlyBanner v-if="IS_BACKEND_MODE" />
+      <FontStatusBanner v-if="!IS_BACKEND_MODE" />
       <RenameSelectionDialog />
-      <TabBar />
-      <HomeWorkspace v-show="activeTab?.kind === 'home'" @new-document="createDocumentInCurrentTab" />
+      <TabBar v-if="!IS_DISABLE_TAB" />
+      <HomeWorkspace
+        v-show="activeTab?.kind === 'home' && !IS_BACKEND_MODE"
+        @new-document="createDocumentInCurrentTab"
+      />
       <EditorWorkspace v-if="activeTab?.kind !== 'home'" />
     </template>
   </div>

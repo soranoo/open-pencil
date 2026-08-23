@@ -85,6 +85,7 @@ export function createEditorStoreModules(
     setStorageDocumentSource: documentIO.setStorageDocumentSource,
     setPlannedFilePath: documentIO.setPlannedFilePath,
     startWatchingCurrentFile: documentIO.startWatchingCurrentFile,
+    hasUnsavedChanges: documentIO.hasUnsavedChanges,
     dispose: () => {
       editor.dispose()
       editor.clearPageViewports()
