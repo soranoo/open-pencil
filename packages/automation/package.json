@@ -1,0 +1,56 @@
+{
+  "name": "@open-pencil/automation",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "description": "Server-side, browser-based automation for the Open-Pencil web app: launch/drive a Puppeteer-controlled browser, send AI design requests through the app's own AI chat pipeline, stream responses, and download the resulting .fig file.",
+  "type": "module",
+  "imports": {
+    "#automation/*": {
+      "types": "./src/*.ts",
+      "bun": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.mts",
+      "bun": "./src/protocol.ts",
+      "import": "./dist/protocol.mjs",
+      "default": "./dist/protocol.mjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "bunx tsdown --config tsdown.config.ts",
+    "typecheck": "tsc --noEmit",
+    "demo": "bun run examples/demo.ts",
+    "demo:configure": "bun run examples/configure-demo.ts",
+    "demo:concurrent": "bun run examples/concurrent-demo.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-pencil/open-pencil.git",
+    "directory": "packages/automation"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.13.4",
+    "puppeteer": "^25.8.0",
+    "puppeteer-cluster": "^0.25.0",
+    "ws": "^8.21.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "@types/ws": "^8.18.1",
+    "tsdown": "^0.22.14",
+    "typescript": "~5.8.3"
+  }
+}
