@@ -55,13 +55,26 @@ function hmacSha256Base64Url(input: string): string {
   return createHmac("sha256", env.DESIGN_SIGNING_SECRET).update(input).digest("base64url");
 }
 
-function createSignedUrlPayload(
-  designId: string,
-  accessKey: string,
-  expiresAt: number,
-  permission: DesignPermission,
-): string {
-  return `${designId}${accessKey}${expiresAt}${permission}${env.DESIGN_SIGNING_SECRET}`;
+type SignedDesignUrlFields = Omit<SignedDesignAccess, "signature">;
+
+function createSignedDesignTargetUrl(fields: SignedDesignUrlFields): URL {
+  const target = new URL(env.FRONTEND_URL);
+  target.searchParams.delete("design");
+  target.searchParams.delete("key");
+  target.searchParams.delete("expiry");
+  target.searchParams.delete("permission");
+  target.searchParams.delete("sign");
+  target.searchParams.set("design", fields.designId);
+  target.searchParams.set("key", fields.accessKey);
+  target.searchParams.set("expiry", String(fields.expiresAt));
+  target.searchParams.set("permission", fields.permission);
+  return target;
+}
+
+export function getSignedDesignUrl(access: SignedDesignAccess): string {
+  const target = createSignedDesignTargetUrl(access);
+  target.searchParams.set("sign", access.signature);
+  return target.toString();
 }
 
 function createCookieName(designId: string): string {
@@ -153,9 +166,8 @@ function hasRequiredPermission(
 export function createSignedDesignUrl(designId: string, permission: DesignPermission): SignedDesignAccess {
   const accessKey = randomBytes(24).toString("base64url");
   const expiresAt = Date.now() + firstAccessTtlMs();
-  const signature = hmacSha256Base64Url(
-    createSignedUrlPayload(designId, accessKey, expiresAt, permission),
-  );
+  const unsignedAccess = { designId, accessKey, expiresAt, permission };
+  const signature = hmacSha256Base64Url(createSignedDesignTargetUrl(unsignedAccess).toString());
 
   return {
     designId,
@@ -168,6 +180,7 @@ export function createSignedDesignUrl(designId: string, permission: DesignPermis
 
 export function validateSignedDesignAccess(input: {
   designId: string;
+  design?: string | null;
   key?: string | null;
   expiry?: string | null;
   permission?: string | null;
@@ -178,12 +191,17 @@ export function validateSignedDesignAccess(input: {
   const expiresAt = Number(input.expiry);
   const permission = normalizePermission(input.permission);
 
-  if (!accessKey || !signature || !Number.isFinite(expiresAt)) {
+  if (!accessKey || !signature || !Number.isFinite(expiresAt) || input.design !== input.designId) {
     return null;
   }
 
   const expectedSignature = hmacSha256Base64Url(
-    createSignedUrlPayload(input.designId, accessKey, expiresAt, permission),
+    createSignedDesignTargetUrl({
+      designId: input.designId,
+      accessKey,
+      expiresAt,
+      permission,
+    }).toString(),
   );
   if (!compareSignatures(signature, expectedSignature)) {
     return null;
@@ -198,7 +216,10 @@ export function validateSignedDesignAccess(input: {
   };
 }
 
-export async function authenticateDesignAccess(c: Context, designId: string): Promise<DesignAccessSession | null> {
+export async function authenticateDesignAccess(
+  c: Context,
+  designId: string
+): Promise<DesignAccessSession | null> {
   const cookie = await getDesignAccessCookie(c, designId);
   if (cookie && cookie.designId === designId && cookie.exp > Date.now()) {
     const session: DesignAccessSession = {
@@ -214,16 +235,13 @@ export async function authenticateDesignAccess(c: Context, designId: string): Pr
 
   const signedAccess = validateSignedDesignAccess({
     designId,
+    design: c.req.query("design"),
     key: c.req.query("key"),
     expiry: c.req.query("expiry"),
     permission: c.req.query("permission"),
     sign: c.req.query("sign"),
   });
   if (!signedAccess) {
-    return null;
-  }
-  const requestedDesignId = c.req.query("design");
-  if (!requestedDesignId || signedAccess.designId !== requestedDesignId) {
     return null;
   }
   if (signedAccess.expiresAt <= Date.now()) {

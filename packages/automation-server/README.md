@@ -118,6 +118,11 @@ bun run examples/demo.ts
 DESIGN_ID=<saved-design-uuid> bun run examples/download-demo.ts
 ```
 
+`DESIGN_SIGNING_SECRET` stays in the automation server and must be kept private.
+It signs the complete configured `FRONTEND_URL` together with the design access
+parameters, so the auth endpoint can reject altered targets or permissions before
+creating an access cookie.
+
 Postgres/MinIO for production-shaped local dev:
 
 ```bash

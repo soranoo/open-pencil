@@ -3,19 +3,20 @@
   "version": "0.1.0",
   "license": "MIT",
   "description": "Prompt-to-design backend that drives the real Open-Pencil web app in a real browser via @open-pencil/automation — same AI chat pipeline and .fig exporter a human user gets, no separate headless AI engine. Same HTTP API as the original headless server template this was forked from.",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/open-pencil/open-pencil.git",
     "directory": "packages/automation-server"
   },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun run tsdown --config tsdown.config.ts",
     "start": "node dist/index.js",
     "migrate": "psql \"$POSTGRES_DATABASE_URL\" -f src/db/schema.sql",
+    "test": "bun test tests",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",

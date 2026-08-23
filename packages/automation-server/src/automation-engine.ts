@@ -20,8 +20,9 @@ import {
 } from "@open-pencil/automation";
 
 import { getDb } from "@/db/index.js";
-import { createSignedDesignUrl } from "@/design-auth.js";
+import { createSignedDesignUrl, getSignedDesignUrl } from "@/design-auth.js";
 import { env } from "@/env.js";
+import { getSession } from "@/session-manager.js";
 
 export class DesignSessionUnavailableError extends Error {
   constructor(designId: string) {
@@ -77,32 +78,25 @@ function withDesignLock<T>(designId: string, fn: () => Promise<T>): Promise<T> {
 
 /** Same URL shape src/routes/frontend-url.ts hands out — 'read' is enough to load bytes. */
 async function buildFrontendDesignUrl(designId: string): Promise<string> {
+  const session = await getSession(designId);
   const metadata = await getDb().getDesignMetadata(designId);
-  if (!metadata) {
+  if (!session && !metadata) {
     throw new DesignSessionUnavailableError(designId);
   }
   const signed = createSignedDesignUrl(designId, "read");
-  const url = new URL(env.FRONTEND_URL);
-  url.searchParams.set("design", designId);
-  url.searchParams.set("key", signed.accessKey);
-  url.searchParams.set("expiry", String(signed.expiresAt));
-  url.searchParams.set("permission", signed.permission);
-  url.searchParams.set("sign", signed.signature);
-  return url.toString();
+  return getSignedDesignUrl(signed);
 }
 
-async function createGenerationSession(designId: string, isNewDesign: boolean): Promise<OpenPencilSession> {
+async function createGenerationSession(designId: string): Promise<OpenPencilSession> {
   const client = await getClient();
-  return isNewDesign
-    ? await client.createSession()
-    : await client.createSession({ url: await buildFrontendDesignUrl(designId) });
+  return await client.createSession({ url: await buildFrontendDesignUrl(designId) });
 }
 
 export async function runAutomationPrompt(
   params: RunAutomationPromptParams
 ): Promise<RunAutomationPromptResult> {
   return withDesignLock(params.designId, async () => {
-    const session = await createGenerationSession(params.designId, params.isNewDesign);
+    const session = await createGenerationSession(params.designId);
 
     try {
       const { result, figFile } = await session.generate({ prompt: params.prompt });

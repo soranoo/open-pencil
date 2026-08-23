@@ -13,65 +13,65 @@
  *   cd packages/automation-server
  *   bun run examples/demo.ts
  */
-const BASE_URL = process.env.SERVER_URL ?? "http://localhost:8800/api/v1";
-const API_KEY = process.env.SERVER_API_KEY ?? "replace-with-a-shared-server-api-key";
+const BASE_URL = process.env.SERVER_URL ?? 'http://localhost:8780/api/v1'
+const API_KEY = process.env.SERVER_API_KEY ?? 'replace-with-a-shared-server-api-key'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       authorization: `Bearer ${API_KEY}`,
-      ...init?.headers,
-    },
-  });
+      ...init?.headers
+    }
+  })
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`${init?.method ?? "GET"} ${path} -> ${response.status}: ${body}`);
+    const body = await response.text()
+    throw new Error(`${init?.method ?? 'GET'} ${path} -> ${response.status}: ${body}`)
   }
-  return response.json() as Promise<T>;
+  return response.json() as Promise<T>
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 interface EnqueueResponse {
-  requestId: string;
-  queuePosition: number;
+  requestId: string
+  queuePosition: number
 }
 
 interface StatusResponse {
-  requestId: string;
-  startedAt: number;
-  completedAt: number | null;
-  queuePosition: number | null;
-  failedAt: number | null;
-  savedAt: number | null;
-  error: string | null;
+  requestId: string
+  startedAt: number
+  completedAt: number | null
+  queuePosition: number | null
+  failedAt: number | null
+  savedAt: number | null
+  error: string | null
   result: {
-    designId: string;
-    summary: string;
-    toolCallCount: number;
-    hitStepLimit: boolean;
-    timeUsedMs: number;
-    toolLog: { tool: string; mutates: boolean }[];
-    usage: unknown;
-  } | null;
+    designId: string
+    summary: string
+    toolCallCount: number
+    hitStepLimit: boolean
+    timeUsedMs: number
+    toolLog: { tool: string; mutates: boolean }[]
+    usage: unknown
+  } | null
 }
 
 async function waitForCompletion(requestId: string): Promise<StatusResponse> {
   for (;;) {
-    const status = await api<StatusResponse>(`/generate/status/${requestId}`);
-    if (status.completedAt || status.failedAt) return status;
-    console.log(`  ...queue position ${status.queuePosition ?? "processing"}`);
-    await sleep(1500);
+    const status = await api<StatusResponse>(`/generate/status/${requestId}`)
+    if (status.completedAt || status.failedAt) return status
+    console.log(`  ...queue position ${status.queuePosition ?? 'processing'}`)
+    await sleep(1500)
   }
 }
 
 const ctx = `
 UI DESIGN REQUIREMENTS
-E-Commerce Marketplace Platform (make sure use section element to warp the content of each group of pages)
+E-Commerce Marketplace Platform (must sure implement all mandatory elements and layouts listed)
 
 1. HOME PAGE
 Mandatory elements:
@@ -446,25 +446,26 @@ Every interactive component should define:
 // `
 
 async function main() {
-  console.log("1. Enqueue a new design...");
-  const enqueue = await api<EnqueueResponse>("/generate", {
-    method: "POST",
+  console.log('1. Enqueue a new design...')
+  const enqueue = await api<EnqueueResponse>('/generate', {
+    method: 'POST',
     body: JSON.stringify({
-      // prompt: "Create a simple pricing page with three tiers: Free, Pro, and Enterprise.",
+      // prompt: 'Create a simple pricing page with three tiers: Free, Pro, and Enterprise.',
       prompt: ctx,
-      autosave: true,
-    }),
-  });
-  console.log(`   requestId=${enqueue.requestId} queuePosition=${enqueue.queuePosition}`);
+      autosave: true
+    })
+  })
+  console.log(`   requestId=${enqueue.requestId} queuePosition=${enqueue.queuePosition}`)
 
-  console.log("2. Poll until it completes...");
-  const status = await waitForCompletion(enqueue.requestId);
+  console.log('2. Poll until it completes...')
+  const status = await waitForCompletion(enqueue.requestId)
   if (status.failedAt || !status.result) {
-    throw new Error(`Generation failed: ${status.error}`);
+    throw new Error(`Generation failed: ${status.error}`)
   }
-  const { designId, summary, toolCallCount, timeUsedMs } = status.result;
-  console.log(`   designId=${designId} toolCalls=${toolCallCount} timeUsedMs=${timeUsedMs}`);
-  console.log(`   summary: ${summary.slice(0, 200)}${summary.length > 200 ? "..." : ""}`);
+  console.log({ status: JSON.stringify(status) })
+  const { designId, summary, toolCallCount, timeUsedMs } = status.result
+  console.log(`   designId=${designId} toolCalls=${toolCallCount} timeUsedMs=${timeUsedMs}`)
+  console.log(`   summary: ${summary.slice(0, 200)}${summary.length > 200 ? '...' : ''}`)
 
   // console.log("3. Save the design...");
   // const saved = await api<{ designId: string; savedBytes: number }>(
@@ -473,21 +474,21 @@ async function main() {
   // );
   // console.log(`   saved ${saved.savedBytes} bytes`);
 
-  console.log("4. Get a shareable frontend URL for it...");
-  const frontendUrl = await api<{ url: string }>(`/design/1330a099-d7cb-4f19-891a-535125e49cf1/url`);
-  console.log(`   ${frontendUrl.url}`);
+  console.log('4. Get a shareable frontend URL for it...')
+  const frontendUrl = await api<{ url: string }>(`/design/${designId}/url`)
+  console.log(`   ${frontendUrl.url}`)
 
-  console.log("5. Fetch the saved .fig bytes directly...");
+  console.log('5. Fetch the saved .fig bytes directly...')
   const figResponse = await fetch(`${BASE_URL}/design/${designId}`, {
-    headers: { authorization: `Bearer ${API_KEY}` },
-  });
-  const figBytes = new Uint8Array(await figResponse.arrayBuffer());
-  console.log(`   downloaded ${figBytes.byteLength} bytes`);
+    headers: { authorization: `Bearer ${API_KEY}` }
+  })
+  const figBytes = new Uint8Array(await figResponse.arrayBuffer())
+  console.log(`   downloaded ${figBytes.byteLength} bytes`)
 
-  console.log("\nDone.");
+  console.log('\nDone.')
 }
 
 main().catch((error) => {
-  console.error("Demo failed:", error);
-  process.exitCode = 1;
-});
+  console.error('Demo failed:', error)
+  process.exitCode = 1
+})
