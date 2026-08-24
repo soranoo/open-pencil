@@ -10,7 +10,7 @@
  *   cd packages/automation-server
  *   DESIGN_ID=00000000-0000-0000-0000-000000000000 bun run examples/download-demo.ts
  */
-const BASE_URL = process.env.SERVER_URL ?? "http://localhost:8800/api/v1";
+const BASE_URL = process.env.SERVER_URL ?? "http://localhost:8788/api/v1";
 const API_KEY = process.env.SERVER_API_KEY ?? "replace-with-a-shared-server-api-key";
 const DESIGN_ID = "1330a099-d7cb-4f19-891a-535125e49cf1";
 const OUTPUT_PATH = process.env.OUTPUT_PATH ?? `${DESIGN_ID ?? "design"}.fig`;

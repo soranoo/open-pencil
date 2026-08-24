@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 
 import { WebSocket, WebSocketServer } from 'ws'
 
@@ -9,7 +9,8 @@ import {
   type EventMessage,
   type HelloMessage,
   type RemoteControlAction,
-  type ResultMessage
+  type ResultMessage,
+  getRemoteControlSigningPayload
 } from './protocol'
 
 interface PendingCommand {
@@ -24,10 +25,37 @@ interface SessionConnection {
   pending: Map<string, PendingCommand>
 }
 
+function hasValidSignature(message: HelloMessage, signingKey: string): boolean {
+  if (
+    !message.enabled ||
+    !message.signature ||
+    !message.host ||
+    !Number.isInteger(message.port) ||
+    !message.sessionId
+  ) {
+    return false
+  }
+
+  const expected = createHmac('sha256', signingKey)
+    .update(
+      getRemoteControlSigningPayload({
+        enabled: message.enabled,
+        host: message.host,
+        port: message.port,
+        token: message.token,
+        sessionId: message.sessionId
+      })
+    )
+    .digest()
+  const received = Buffer.from(message.signature, 'base64url')
+  return received.length === expected.length && timingSafeEqual(received, expected)
+}
+
 export interface HubOptions {
   host: string
   port: number
   token: string
+  signingKey: string
 }
 
 /**
@@ -47,6 +75,7 @@ export class RemoteControlHub {
   private readonly host: string
   private readonly requestedPort: number
   private readonly token: string
+  private readonly signingKey: string
   private wss: WebSocketServer | null = null
   private actualPort = 0
   private readonly sessions = new Map<string, SessionConnection>()
@@ -56,6 +85,7 @@ export class RemoteControlHub {
     this.host = options.host
     this.requestedPort = options.port
     this.token = options.token
+    this.signingKey = options.signingKey
   }
 
   get port(): number {
@@ -137,6 +167,10 @@ export class RemoteControlHub {
         clearTimeout(authTimer)
         if (!msg.token || msg.token !== this.token) {
           ws.close(4003, 'invalid token')
+          return
+        }
+        if (!hasValidSignature(msg, this.signingKey)) {
+          ws.close(4004, 'invalid signature')
           return
         }
         if (msg.protocolVersion !== REMOTE_CONTROL_PROTOCOL_VERSION) {

@@ -75,14 +75,12 @@ debug-overflow-analysis.ts, test.ts, test-2.ts, tmp.json    dev scratch files
 `@open-pencil/automation`. `ai` stays as a dependency — `db/interface.ts` and
 `session-manager.ts` still use its `ModelMessage` type for `promptHistory`.
 
-Two `GenerateResponse` fields are necessarily best-effort now that generation
-happens inside the real app's own agent loop rather than a locally-run,
-inspectable one:
-- **`toolLog`**: real tool names, read from the chat's own message parts —
-  but `mutates` is always `true` (the original tool registry tracked this
-  per tool definition, which doesn't exist server-side anymore).
-- **`hitStepLimit`**: always `false` — the app's own step limit is enforced
-  inside the browser; this process has no visibility into whether it fired.
+`GenerateResponse` receives the ordered tool invocation log and step-limit
+status from the real app's browser session:
+- **`toolLog`**: one entry per tool invocation, including the tool name and its
+  mutation status from the canonical app tool definition.
+- **`hitStepLimit`**: `true` when the app's agent reached its configured step
+  budget before completing the request.
 
 ## Browser page lifecycle
 

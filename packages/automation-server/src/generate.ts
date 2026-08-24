@@ -5,14 +5,8 @@
 //
 // Internals: instead of running an in-process AI SDK agent loop against an in-memory
 // SceneGraph (chat-engine.ts / headless-tools.ts upstream), this drives a real browser
-// session against the real Open-Pencil app via automation-engine.ts. Two response fields
-// are necessarily best-effort now that generation happens inside that black box rather
-// than a locally-inspectable step loop:
-//   - toolLog: real tool names and mutation status from the app's tool execution log.
-//     The app derives `mutates` from each canonical ToolDef, so the server does not
-//     need to duplicate that registry or infer mutation behavior.
-//   - hitStepLimit: always false — the real app's own agent loop enforces its own step
-//     limit internally; this process has no visibility into whether it was hit.
+// session against the real Open-Pencil app via automation-engine.ts. The browser reports
+// the app's ordered tool log and whether its configured step budget was reached.
 
 import z from "zod";
 
@@ -151,6 +145,7 @@ export async function processGenerateRequest(
       requestId: logContext?.requestId ?? null,
       toolCallCount: automationResult.toolCalls?.length ?? 0,
       finishReason: automationResult.finishReason,
+      hitStepLimit: automationResult.hitStepLimit,
       usage: automationResult.usage,
     });
     const toolCalls = automationResult.toolCalls ?? [];
@@ -158,7 +153,7 @@ export async function processGenerateRequest(
       designId,
       summary: automationResult.text,
       toolCallCount: toolCalls.length,
-      hitStepLimit: false,
+      hitStepLimit: automationResult.hitStepLimit,
       timeUsedMs: Date.now() - startedAt,
       toolLog: toolCalls,
       usage: toModelUsageShape(automationResult.usage),

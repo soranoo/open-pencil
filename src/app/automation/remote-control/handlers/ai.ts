@@ -14,7 +14,7 @@ import type { UIMessage } from 'ai'
 import type { JSONObject } from '@open-pencil/scene-graph/primitives'
 
 import { useAIChat } from '@/app/ai/chat/use'
-import { getStepUsages, getToolLogEntries } from '@/app/ai/tools'
+import { didHitStepLimit, getStepUsages, getToolLogEntries } from '@/app/ai/tools'
 import { getActiveEditorStore } from '@/app/editor/active-store'
 
 import type { AIRequestPayload, AIRequestResult } from '@open-pencil/automation/protocol'
@@ -132,17 +132,16 @@ export async function handleAIRequest(
     { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
   )
   const toolCalls = [
-    ...new Map(
-      getToolLogEntries(store)
-        .slice(toolLogStart)
-        .map((entry) => [entry.tool, { tool: entry.tool, mutates: entry.mutates }])
-    ).values()
+    ...getToolLogEntries(store)
+      .slice(toolLogStart)
+      .map((entry) => ({ tool: entry.tool, mutates: entry.mutates }))
   ]
 
   return {
     text,
     finishReason: finalMessage?.role === 'assistant' ? 'stop' : 'unknown',
     usage: { ...usage, totalTokens: usage.inputTokens + usage.outputTokens },
-    toolCalls
+    toolCalls,
+    hitStepLimit: didHitStepLimit(store)
   }
 }

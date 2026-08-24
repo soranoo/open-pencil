@@ -104,7 +104,7 @@ frame.
 **Browser -> Hub**, once, right after the socket opens:
 
 ```json
-{ "type": "hello", "token": "...", "sessionId": "...", "protocolVersion": 1 }
+{ "type": "hello", "enabled": "1", "token": "...", "host": "127.0.0.1", "port": 9843, "sessionId": "...", "protocolVersion": 1, "signature": "..." }
 ```
 
 **Hub -> Browser**, one per command:
@@ -160,9 +160,14 @@ The task requirements floated two options — a token-based query param, or
 exposing a controllable object via `puppeteer`'s console. This package uses
 the **query-param + outbound WebSocket** approach:
 
-- `page.goto('http://localhost:1420?op-remote-control=1&op-remote-control-host=...&op-remote-control-port=...&op-remote-control-token=...&op-remote-control-session=...')`
+- `page.goto('http://localhost:1420?op-remote-control=1&op-remote-control-host=...&op-remote-control-port=...&op-remote-control-token=...&op-remote-control-session=...&op-remote-control-sign=...')`
 - The frontend hook reads those params once at mount and, if present, opens
   the WebSocket described above.
+- The final `op-remote-control-sign` parameter is an HMAC of every other
+  `op-remote-control*` parameter, keyed by a private per-client signing key.
+  The hub verifies it before registering the browser session, so modified
+  connection parameters are rejected without exposing the signing key in the
+  URL.
 
 This was preferred over `page.exposeFunction` / console-bridging because:
 it matches the existing MCP bridge's proven pattern exactly; it survives

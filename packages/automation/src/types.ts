@@ -91,8 +91,10 @@ export interface AIResult {
   text: string
   finishReason: string
   usage: AIRequestUsage
-  /** Distinct tools invoked during this turn. Best-effort; order not guaranteed. */
+  /** Every tool invocation emitted during this turn, in execution order. */
   toolCalls: AIRequestToolCall[]
+  /** Whether the app stopped the agent after reaching its configured step budget. */
+  hitStepLimit: boolean
 }
 
 export interface DownloadFigOptions {

@@ -19,9 +19,31 @@ export type RemoteControlAction = 'ping' | 'ai.request' | 'ai.configure' | 'fig.
 /** Browser -> Hub: sent once, immediately after the WebSocket opens. */
 export interface HelloMessage {
   type: 'hello'
+  enabled: string
   token: string
+  host: string
+  port: number
   sessionId: string
   protocolVersion: number
+  signature: string
+}
+
+export interface RemoteControlSignatureInput {
+  enabled: string
+  host: string
+  port: number
+  token: string
+  sessionId: string
+}
+
+export function getRemoteControlSigningPayload(input: RemoteControlSignatureInput): string {
+  return JSON.stringify({
+    'op-remote-control': input.enabled,
+    'op-remote-control-host': input.host,
+    'op-remote-control-port': input.port,
+    'op-remote-control-token': input.token,
+    'op-remote-control-session': input.sessionId
+  })
 }
 
 /** Hub -> Browser: a command to execute. */
@@ -84,8 +106,10 @@ export interface AIRequestResult {
   text: string
   finishReason: string
   usage: AIRequestUsage
-  /** Distinct tools invoked during this turn. Best-effort; order not guaranteed. */
+  /** Every tool invocation emitted during this turn, in execution order. */
   toolCalls: AIRequestToolCall[]
+  /** Whether the app stopped the agent after reaching its configured step budget. */
+  hitStepLimit: boolean
 }
 
 // ---- ai.configure -------------------------------------------------------------

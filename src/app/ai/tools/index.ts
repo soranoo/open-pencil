@@ -99,7 +99,16 @@ export function createAITools(store: EditorStore) {
     [
       ...CORE_TOOLS,
       ...EXTENDED_TOOLS.filter((def) =>
-        ['get_components', 'list_libraries', 'insert_library_component'].includes(def.name)
+        [
+          'get_components',
+          'list_libraries',
+          'insert_library_component',
+          'create_component',
+          'create_instance',
+          'combine_as_variants',
+          'node_to_component',
+          'design_to_component_map'
+        ].includes(def.name)
       )
     ],
     {

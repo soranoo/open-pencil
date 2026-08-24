@@ -26,6 +26,7 @@ interface ResolvedConfig {
   hubHost: string
   hubPort: number
   token: string
+  signingKey: string
   headless: boolean
   viewport: { width: number; height: number }
   concurrency: number
@@ -58,6 +59,7 @@ function resolveConfig(options: ConnectOptions): ResolvedConfig {
     hubHost: options.hubHost ?? defaultEnv.OPENPENCIL_REMOTE_CONTROL_HOST,
     hubPort: options.hubPort ?? defaultEnv.OPENPENCIL_REMOTE_CONTROL_PORT,
     token: options.token ?? defaultEnv.OPENPENCIL_REMOTE_CONTROL_TOKEN ?? randomBytes(32).toString('hex'),
+    signingKey: randomBytes(32).toString('hex'),
     headless: options.headless ?? defaultEnv.OPENPENCIL_HEADLESS,
     viewport: options.viewport ?? {
       width: defaultEnv.OPENPENCIL_VIEWPORT_WIDTH,
@@ -112,7 +114,12 @@ export class OpenPencilAutomation {
   static async connect(options: ConnectOptions = {}): Promise<OpenPencilAutomation> {
     const config = resolveConfig(options)
 
-    const hub = new RemoteControlHub({ host: config.hubHost, port: config.hubPort, token: config.token })
+    const hub = new RemoteControlHub({
+      host: config.hubHost,
+      port: config.hubPort,
+      token: config.token,
+      signingKey: config.signingKey
+    })
     const bound = await hub.start()
     // Reflect the actually-bound port (relevant when hubPort was 0/"pick a free port").
     config.hubPort = bound.port
@@ -152,6 +159,7 @@ export class OpenPencilAutomation {
         hubHost: config.hubHost,
         hubPort: config.hubPort,
         token: config.token,
+        signingKey: config.signingKey,
         sessionId: data.sessionId,
         viewport: config.viewport,
         readyTimeoutMs: config.readyTimeoutMs,
@@ -170,19 +178,26 @@ export class OpenPencilAutomation {
     const sessionId = randomUUID()
     const queue = new AsyncQueue<SessionTask>()
 
+    let session: OpenPencilSession | undefined
     const donePromise = this.cluster
       .execute({ sessionId, queue, url: options.url ?? this.config.url })
       .catch((error: unknown) => {
         // Command-level failures already propagate through hub.sendCommand
         // rejections; this only guards against an unhandled rejection from
         // the cluster's own task promise (e.g. bootstrap failure).
+        const sessionError = toAutomationError(
+          'CLUSTER_ERROR',
+          error,
+          `Automation session ${sessionId} failed`
+        )
+        session?.fail(sessionError)
         console.warn(
           `[Automation] Session ${sessionId} task ended with error:`,
-          error instanceof Error ? error.message : error
+          sessionError.message
         )
       })
 
-    const session = new OpenPencilSession(
+    session = new OpenPencilSession(
       sessionId,
       {
         aiTimeoutMs: this.config.aiTimeoutMs,

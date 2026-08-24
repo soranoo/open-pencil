@@ -13,7 +13,7 @@
  *   cd packages/automation-server
  *   bun run examples/demo.ts
  */
-const BASE_URL = process.env.SERVER_URL ?? 'http://localhost:8780/api/v1'
+const BASE_URL = process.env.SERVER_URL ?? 'http://localhost:8788/api/v1'
 const API_KEY = process.env.SERVER_API_KEY ?? 'replace-with-a-shared-server-api-key'
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -450,8 +450,8 @@ async function main() {
   const enqueue = await api<EnqueueResponse>('/generate', {
     method: 'POST',
     body: JSON.stringify({
-      // prompt: 'Create a simple pricing page with three tiers: Free, Pro, and Enterprise.',
-      prompt: ctx,
+      prompt: 'Create a simple pricing page with three tiers: Free, Pro, and Enterprise.',
+      // prompt: ctx,
       autosave: true
     })
   })
@@ -463,8 +463,10 @@ async function main() {
     throw new Error(`Generation failed: ${status.error}`)
   }
   console.log({ status: JSON.stringify(status) })
-  const { designId, summary, toolCallCount, timeUsedMs } = status.result
-  console.log(`   designId=${designId} toolCalls=${toolCallCount} timeUsedMs=${timeUsedMs}`)
+  const { designId, summary, toolCallCount, hitStepLimit, timeUsedMs } = status.result
+  console.log(
+    `   designId=${designId} toolCalls=${toolCallCount} hitStepLimit=${hitStepLimit} timeUsedMs=${timeUsedMs}`
+  )
   console.log(`   summary: ${summary.slice(0, 200)}${summary.length > 200 ? '...' : ''}`)
 
   // console.log("3. Save the design...");

@@ -118,7 +118,8 @@ export class OpenPencilSession {
           text: raw.text,
           finishReason: raw.finishReason,
           usage: raw.usage,
-          toolCalls: raw.toolCalls
+          toolCalls: raw.toolCalls,
+          hitStepLimit: raw.hitStepLimit
         }
       },
       (error: unknown) => {
@@ -196,9 +197,25 @@ export class OpenPencilSession {
     await this.donePromise.catch(() => undefined)
   }
 
+  /** Reject queued operations when the browser task fails before serving them. */
+  fail(error: Error): void {
+    if (this.closed) return
+    this.closed = true
+    this.onClosed()
+    this.queue.fail(error, rejectSessionTask)
+  }
+
   private assertOpen(): void {
     if (this.closed) {
       throw new OpenPencilAutomationError('CLIENT_CLOSED', `Session "${this.id}" has already been closed`)
     }
   }
+}
+
+function rejectSessionTask(task: SessionTask, error: Error): void {
+  if (task.kind === 'close') {
+    task.resolve()
+    return
+  }
+  task.reject(error)
 }

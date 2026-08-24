@@ -46,6 +46,7 @@ export interface RunAutomationPromptResult {
   finishReason: string;
   usage: AIRequestUsage;
   toolCalls: AIRequestToolCall[];
+  hitStepLimit: boolean;
   /** Current .fig bytes for the design, downloaded right after generation. */
   figBytes: Uint8Array;
 }
@@ -87,16 +88,20 @@ async function buildFrontendDesignUrl(designId: string): Promise<string> {
   return getSignedDesignUrl(signed);
 }
 
-async function createGenerationSession(designId: string): Promise<OpenPencilSession> {
+async function createGenerationSession(
+  designId: string,
+  isNewDesign: boolean,
+): Promise<OpenPencilSession> {
   const client = await getClient();
-  return await client.createSession({ url: await buildFrontendDesignUrl(designId) });
+  const url = isNewDesign ? env.FRONTEND_URL : await buildFrontendDesignUrl(designId);
+  return await client.createSession({ url });
 }
 
 export async function runAutomationPrompt(
   params: RunAutomationPromptParams
 ): Promise<RunAutomationPromptResult> {
   return withDesignLock(params.designId, async () => {
-    const session = await createGenerationSession(params.designId);
+    const session = await createGenerationSession(params.designId, params.isNewDesign);
 
     try {
       const { result, figFile } = await session.generate({ prompt: params.prompt });
@@ -106,6 +111,7 @@ export async function runAutomationPrompt(
         finishReason: result.finishReason,
         usage: result.usage,
         toolCalls: result.toolCalls,
+        hitStepLimit: result.hitStepLimit,
         figBytes: figFile.bytes
       };
     } catch (error) {

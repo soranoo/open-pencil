@@ -3,14 +3,22 @@ import type { Page } from 'puppeteer'
 import type { AsyncQueue } from './async-queue'
 import { OpenPencilAutomationError, toAutomationError } from './errors'
 import type { RemoteControlHub } from './hub'
-import type { AIConfigureResult, AIRequestResult, FigDownloadResult } from './protocol'
+import {
+  getRemoteControlSigningPayload,
+  type AIConfigureResult,
+  type AIRequestResult,
+  type FigDownloadResult
+} from './protocol'
 import type { AIModelConfig } from './types'
+
+import { createHmac } from 'node:crypto'
 
 export interface PageBootstrapOptions {
   url: string
   hubHost: string
   hubPort: number
   token: string
+  signingKey: string
   sessionId: string
   viewport: { width: number; height: number }
   readyTimeoutMs: number
@@ -45,11 +53,26 @@ export async function bootstrapPage(page: Page, options: PageBootstrapOptions): 
   await page.setViewport({ width: options.viewport.width, height: options.viewport.height })
 
   const target = new URL(options.url)
-  target.searchParams.set('op-remote-control', '1')
+  const remoteControlEnabled = '1'
+  target.searchParams.set('op-remote-control', remoteControlEnabled)
   target.searchParams.set('op-remote-control-host', options.hubHost)
   target.searchParams.set('op-remote-control-port', String(options.hubPort))
   target.searchParams.set('op-remote-control-token', options.token)
   target.searchParams.set('op-remote-control-session', options.sessionId)
+  target.searchParams.set(
+    'op-remote-control-sign',
+    createHmac('sha256', options.signingKey)
+      .update(
+        getRemoteControlSigningPayload({
+          enabled: remoteControlEnabled,
+          host: options.hubHost,
+          port: options.hubPort,
+          token: options.token,
+          sessionId: options.sessionId
+        })
+      )
+      .digest('base64url')
+  )
 
   try {
     await page.goto(target.toString(), {
@@ -121,7 +144,8 @@ export async function runSessionLoop(
     let task: SessionTask
     try {
       task = await Promise.race([queue.next(), crashed])
-    } catch {
+    } catch (error) {
+      if (error instanceof OpenPencilAutomationError) throw error
       return
     }
 

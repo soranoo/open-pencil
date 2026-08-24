@@ -21,46 +21,60 @@ import {
   type HelloMessage,
   type ResultMessage
 } from '@open-pencil/automation/protocol'
+import z from 'zod'
 import { handleAIRequest } from '@/app/automation/remote-control/handlers/ai'
 import { handleAIConfigure } from '@/app/automation/remote-control/handlers/configure'
 import { handleFigDownload } from '@/app/automation/remote-control/handlers/fig'
 
 export type RemoteControlQueryParams = Record<string, string | string[] | null | undefined>
 
-interface RemoteControlConfig {
-  host: string
-  port: string
-  token: string
-  sessionId: string
-}
+const queryString = z.preprocess(
+  (value) => (Array.isArray(value) ? value[0] : value),
+  z.string().min(1)
+)
 
-function firstValue(value: string | string[] | null | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0]
-  return value ?? undefined
-}
+const queryPort = z.preprocess(
+  (value) => (Array.isArray(value) ? value[0] : value),
+  z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(0).max(65535))
+)
+
+const remoteControlQuerySchema = z
+  .object({
+    'op-remote-control': queryString,
+    'op-remote-control-host': queryString.default('127.0.0.1'),
+    'op-remote-control-port': queryPort,
+    'op-remote-control-token': queryString,
+    'op-remote-control-session': queryString,
+    'op-remote-control-sign': queryString
+  })
+  .transform((value) => ({
+    enabled: value['op-remote-control'],
+    host: value['op-remote-control-host'],
+    port: value['op-remote-control-port'],
+    token: value['op-remote-control-token'],
+    sessionId: value['op-remote-control-session'],
+    signature: value['op-remote-control-sign']
+  }))
+
+type RemoteControlConfig = z.infer<typeof remoteControlQuerySchema>
 
 function readConfig(params: RemoteControlQueryParams): RemoteControlConfig | null {
-  if (!firstValue(params['op-remote-control'])) return null
-
-  const port = firstValue(params['op-remote-control-port'])
-  const token = firstValue(params['op-remote-control-token'])
-  const sessionId = firstValue(params['op-remote-control-session'])
-  const host = firstValue(params['op-remote-control-host']) ?? '127.0.0.1'
-
-  if (!port || !token || !sessionId) {
+  const result = remoteControlQuerySchema.safeParse(params)
+  if (!result.success) {
     console.warn(
-      '[RemoteControl] "op-remote-control" is set but port/token/session params are missing; ' +
+      '[RemoteControl] "op-remote-control" is set but connection parameters are missing or invalid; ' +
         'remote control stays disabled.'
     )
     return null
   }
 
-  return { host, port, token, sessionId }
+  return result.data
 }
 
 export function connectRemoteControl(params: RemoteControlQueryParams): { disconnect: () => void } {
-  const config = readConfig(params)
-  if (!config) return { disconnect: () => {} }
+  const parsedConfig = readConfig(params)
+  if (!parsedConfig) return { disconnect: () => {} }
+  const config: RemoteControlConfig = parsedConfig
 
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
@@ -140,9 +154,13 @@ export function connectRemoteControl(params: RemoteControlQueryParams): { discon
     socket.onopen = () => {
       const hello: HelloMessage = {
         type: 'hello',
+        enabled: config.enabled,
         token: config.token,
+        host: config.host,
+        port: config.port,
         sessionId: config.sessionId,
-        protocolVersion: REMOTE_CONTROL_PROTOCOL_VERSION
+        protocolVersion: REMOTE_CONTROL_PROTOCOL_VERSION,
+        signature: config.signature
       }
       socket.send(JSON.stringify(hello))
       console.debug('[RemoteControl] Connected to hub, registered session', config.sessionId)
