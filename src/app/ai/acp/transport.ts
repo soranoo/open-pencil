@@ -10,7 +10,7 @@ import type { ChatTransport, UIMessage, UIMessageChunk } from 'ai'
 
 import type { ACPAgentDef } from '@open-pencil/core/constants'
 
-import SYSTEM_PROMPT from '@/app/ai/chat/system-prompt.md?raw'
+import { SYSTEM_PROMPT } from '@/app/ai/chat/system-prompt'
 import { buildACPMCPServers } from '@/app/integrations/mcp'
 
 import { mapUpdate } from './map-update'

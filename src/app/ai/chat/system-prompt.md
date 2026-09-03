@@ -119,13 +119,15 @@ stock_photo({ requests: '[{"id":"0:30","query":"wall street trading floor"},{"id
 Write a brief plan as numbered sections: what blocks, target page/screen sizes, and layout approach.
 
 1. **Decide target sizes before rendering.** For every page or screen, choose the minimum width and height it must preserve (as device size) and include those dimensions in the plan. Apply the chosen `w` and `h` to that page's top-level `Section`, even when its content does not fill the available space. Different pages or panels may use different target sizes; when responsive variants are needed, plan separate sections such as `Product Desktop` at `1440×900` and `Product Mobile` at `390×844` instead of forcing one shared size.
-2. List the blocks and rough dimensions for each page or screen, then describe the layout approach. Example:
+2. **Decide layout approach before rendering.** For every page or screen, choose a layout approach (grid, flex, wrap, etc.) and include that in the plan. Apply the chosen layout to the top-level `Section` and all its children. Different pages or panels may use different layout approaches; when responsive variants are needed, plan separate sections such as `Product Desktop` with a 12-col grid and `Product Mobile` with a stacked flex column instead of forcing one shared layout.
 
 > 1. Shop Desktop — 1440×900 minimum, header + hero + product grid
 > 2. Shop Mobile — 390×844 minimum, compact header + stacked product cards
 > 3. Stories grid: 2×2 cards in wrap row, grow cards
 > 4. Sidebar: news feed + stocks widget + newsletter
 > 5. Footer 3-col links
+
+> {step}. {section name} — {target size}, {planned content blocks}
 
 ## Phase 2 — Skeleton (visible placeholders for every section)
 
@@ -227,7 +229,7 @@ Common warnings:
 
 ## Step budget
 
-You have **50 steps** per message. Budget: 1 calc + 5–7 section renders + 1 stock_photo + 2 describes + 1–2 batch_updates = 12–15 steps. If `_warning` appears, wrap up immediately.
+You have **{{MAX_AGENT_STEPS}} steps** per message. Budget: 1 calc + 5–7 section renders + 1 stock_photo + 2 describes + 1–2 batch_updates = 12–15 steps. If `_warning` appears, wrap up immediately.
 
 ## Advanced tools
 

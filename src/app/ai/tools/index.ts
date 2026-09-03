@@ -18,7 +18,7 @@ import type { EditorStore } from '@/app/editor/active-store'
 import { ensureGraphFonts } from '@/app/editor/fonts'
 import { useLibraryService } from '@/app/libraries'
 
-export const MAX_AGENT_STEPS = 50
+export const MAX_AGENT_STEPS = 150
 
 export interface StepUsage {
   inputTokens: number
