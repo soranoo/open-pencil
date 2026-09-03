@@ -2,6 +2,7 @@ import { valibotSchema } from '@ai-sdk/valibot'
 import { tool } from 'ai'
 import * as v from 'valibot'
 
+import { computeAllLayouts } from '@open-pencil/core/layout'
 import {
   CORE_TOOLS,
   EXTENDED_TOOLS,
@@ -19,9 +20,23 @@ import { useLibraryService } from '@/app/libraries'
 
 export const MAX_AGENT_STEPS = 150
 
+export interface StepUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  timestamp: number
+}
+
 class RunState {
   toolLog: ToolLogEntry[] = []
+  stepUsages: StepUsage[] = []
   currentSteps = 0
+
+  recordStep(usage: StepUsage): void {
+    this.stepUsages.push(usage)
+    this.currentSteps++
+  }
 
   resetSteps(): void {
     this.currentSteps = 0
@@ -33,6 +48,7 @@ class RunState {
 
   clear(): void {
     this.toolLog = []
+    this.stepUsages = []
     this.currentSteps = 0
   }
 }
@@ -52,8 +68,12 @@ export function getToolLogEntries(store?: EditorStore): ToolLogEntry[] {
   return getRunState(store).toolLog
 }
 
-export function recordStep(store?: EditorStore): void {
-  getRunState(store).currentSteps++
+export function getStepUsages(store?: EditorStore): StepUsage[] {
+  return getRunState(store).stepUsages
+}
+
+export function recordStepUsage(usage: StepUsage, store?: EditorStore): void {
+  getRunState(store).recordStep(usage)
 }
 
 export function resetRunSteps(store?: EditorStore): void {
@@ -93,21 +113,17 @@ export function createAITools(store: EditorStore) {
     ],
     {
       getFigma: () => makeFigmaFromStore(store),
-      executeTool: async (def, figma, args) => {
-        if (def.mutates) beforeSnapshot = store.snapshotPage()
-        return def.mutates
-          ? store.runMutationWithLayout(
-              () => def.execute(figma, args),
-              figma.currentPageId,
-              async () => {
-                const pageNode = store.graph.getNode(figma.currentPageId)
-                if (pageNode) await ensureGraphFonts(store.graph, pageNode.childIds, store.renderer)
-              }
-            )
-          : def.execute(figma, args)
+      onBeforeExecute: (def) => {
+        if (def.mutates) {
+          beforeSnapshot = store.snapshotPage()
+        }
       },
       onAfterExecute: async (def) => {
         if (def.mutates) {
+          const pageId = store.state.currentPageId
+          const pageNode = store.graph.getNode(pageId)
+          if (pageNode) await ensureGraphFonts(store.graph, pageNode.childIds, store.renderer)
+          computeAllLayouts(store.graph, pageId)
           store.requestRender()
           if (beforeSnapshot) {
             const before = beforeSnapshot

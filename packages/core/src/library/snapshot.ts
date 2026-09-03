@@ -10,7 +10,7 @@ const VOLATILE_NODE_FIELDS = new Set([
   'parentId',
   'childIds',
   'source',
-  'instanceOverrides',
+  'overrides',
   'componentPropertyAssignments',
   'textPicture',
   'derivedTextGlyphs',

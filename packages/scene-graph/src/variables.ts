@@ -2,7 +2,6 @@ import { omit, omitBy } from 'es-toolkit/object'
 
 import { BLACK } from './constants'
 import type { SceneGraph } from './index'
-import { setInstanceOverride } from './instance-overrides'
 import type { Color } from './primitives'
 import type { Variable, VariableCollection, VariableType, VariableValue } from './types'
 
@@ -379,19 +378,21 @@ function markBoundVariablesOverrideOnInstance(graph: SceneGraph, nodeId: string)
   const node = graph.nodes.get(nodeId)
   if (!node) return
 
-  // Mark the field on the canonical structured state.
+  // If the node IS an INSTANCE itself, set the bare-key override (syncInstances
+  // checks `key in instance.overrides` for INSTANCE-self properties)
   if (node.type === 'INSTANCE') {
-    setInstanceOverride(node.instanceOverrides, node.id, node.id, 'boundVariables')
+    node.overrides['boundVariables'] = true
     return
   }
 
-  // Walk up to the owning instance for descendant fields.
+  // Otherwise walk up to find an INSTANCE parent and set the child-key override
+  // (syncChildren checks `${instChild.id}:${key}` format)
   let current = node
   while (current.parentId) {
     const parent = graph.nodes.get(current.parentId)
     if (!parent) break
     if (parent.type === 'INSTANCE') {
-      setInstanceOverride(parent.instanceOverrides, parent.id, nodeId, 'boundVariables')
+      parent.overrides[`${nodeId}:boundVariables`] = true
       break
     }
     current = parent

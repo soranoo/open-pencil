@@ -9,7 +9,6 @@ import {
 } from './analyze-commands'
 import {
   findCommand,
-  fontStatusCommand,
   infoCommand,
   nodeCommand,
   pagesCommand,
@@ -36,7 +35,6 @@ export * from './analyze-commands'
 
 export const ALL_RPC_COMMANDS = [
   infoCommand,
-  fontStatusCommand,
   pagesCommand,
   treeCommand,
   findCommand,

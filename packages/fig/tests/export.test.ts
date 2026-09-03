@@ -70,10 +70,7 @@ describe('@open-pencil/fig SceneGraph export policy', () => {
       opacity: 0.5
     }
     graph.updateNode(instance?.id ?? '', {
-      instanceOverrides: {
-        self: new Map(),
-        descendants: new Map([[targetText?.id ?? '', new Map([['text', 'Edited']])]])
-      },
+      overrides: { [`${targetText?.id}:text`]: 'Edited' },
       source: {
         ...instance?.source,
         fig: {

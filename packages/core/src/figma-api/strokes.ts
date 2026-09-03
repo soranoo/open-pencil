@@ -1,4 +1,3 @@
-import { recordInstanceOverride } from '@open-pencil/scene-graph'
 import type { SceneGraph, SceneNode, Stroke } from '@open-pencil/scene-graph'
 import { copyStrokes } from '@open-pencil/scene-graph/copy'
 
@@ -7,7 +6,6 @@ export function setFirstStrokeWeight(graph: SceneGraph, node: SceneNode, weight:
   const strokes = copyStrokes(node.strokes)
   strokes[0].weight = weight
   graph.updateNode(node.id, { strokes })
-  recordInstanceOverride(graph, node.id, ['strokes'])
 }
 
 export function setFirstStrokeAlign(graph: SceneGraph, node: SceneNode, align: string): void {
@@ -15,7 +13,6 @@ export function setFirstStrokeAlign(graph: SceneGraph, node: SceneNode, align: s
   const strokes = copyStrokes(node.strokes)
   strokes[0].align = align as Stroke['align']
   graph.updateNode(node.id, { strokes })
-  recordInstanceOverride(graph, node.id, ['strokes'])
 }
 
 export function setIndependentStrokeWeight(
@@ -28,5 +25,4 @@ export function setIndependentStrokeWeight(
     [field]: value,
     independentStrokeWeights: true
   })
-  recordInstanceOverride(graph, nodeId, [field, 'independentStrokeWeights'])
 }

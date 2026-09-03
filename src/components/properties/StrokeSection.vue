@@ -4,7 +4,6 @@ import { ref } from 'vue'
 import {
   applySolidStrokeColor,
   BindableValueRoot,
-  isStrokeCapValue,
   MIXED,
   useColorBindingProvider,
   useI18n,
@@ -44,7 +43,7 @@ const strokeCtx = useStrokeControls()
 const { advancedActive, cap, join, miterLimit } = strokeCtx
 const colorProvider = useColorBindingProvider()
 const okhcl = useOkHCL()
-const { panels, common } = useI18n()
+const { panels, dialogs } = useI18n()
 const expandedSides = ref(false)
 
 function strokePreview(stroke: Stroke, color: Color): Fill {
@@ -68,7 +67,7 @@ function updateStrokeColor(
 }
 
 function setCap(value: string) {
-  if (isStrokeCapValue(value)) {
+  if (value === 'NONE' || value === 'ROUND' || value === 'SQUARE') {
     strokeCtx.setCap(value)
   }
 }
@@ -187,7 +186,7 @@ function onToggleSides(activeNode: SceneNode | null) {
             <template #binding>
               <VariableBindingPicker
                 :trigger-label="panels.applyVariable"
-                :search-placeholder="common.search"
+                :search-placeholder="dialogs.search"
                 :empty-label="panels.noVariablesFound"
                 :detach-label="panels.detachVariable"
                 :create-label="
@@ -280,12 +279,7 @@ function onToggleSides(activeNode: SceneNode | null) {
               <Tip :label="option.label">
                 <icon-lucide-minus v-if="option.value === 'NONE'" class="size-3" />
                 <icon-lucide-circle v-else-if="option.value === 'ROUND'" class="size-2.5" />
-                <icon-lucide-square v-else-if="option.value === 'SQUARE'" class="size-2.5" />
-                <icon-lucide-arrow-right
-                  v-else-if="option.value === 'ARROW_LINES'"
-                  class="size-3"
-                />
-                <icon-lucide-triangle v-else class="size-2.5" />
+                <icon-lucide-square v-else class="size-2.5" />
               </Tip>
             </template>
           </SegmentedControl>

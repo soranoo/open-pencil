@@ -21,7 +21,7 @@ import { useI18n } from '@open-pencil/vue'
 import { ACP_AGENTS } from '@open-pencil/core/constants'
 
 const { providerID, providerDef, modelID, customModelID } = useAIChat()
-const { ai } = useI18n()
+const { dialogs } = useI18n()
 
 const { status, disabled = false } = defineProps<{
   status: 'ready' | 'submitted' | 'streaming' | 'error'
@@ -180,7 +180,7 @@ function handleSubmit(e: Event) {
           <textarea
             v-model="input"
             data-test-id="chat-input"
-            :placeholder="ai.describeChange"
+            :placeholder="dialogs.describeChange"
             :disabled="isStreaming"
             rows="2"
             aria-label="Describe a change"
@@ -234,7 +234,7 @@ function handleSubmit(e: Event) {
 
           <template #actions>
             <IconButton
-              :label="ai.providerSettings"
+              :label="dialogs.providerSettings"
               size="sm"
               data-test-id="provider-settings-trigger"
               @click="openSettingsDialog('ai')"
@@ -243,7 +243,7 @@ function handleSubmit(e: Event) {
             </IconButton>
             <IconButton
               v-if="isStreaming"
-              :label="ai.stopGenerating"
+              :label="dialogs.stopGenerating"
               size="sm"
               data-test-id="chat-stop-button"
               class="border border-border"
@@ -253,7 +253,7 @@ function handleSubmit(e: Event) {
             </IconButton>
             <IconButton
               v-else
-              :label="ai.sendMessage"
+              :label="dialogs.sendMessage"
               size="sm"
               type="submit"
               data-test-id="chat-send-button"

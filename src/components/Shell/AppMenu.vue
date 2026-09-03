@@ -51,7 +51,7 @@ watch(nameInput, (input) => {
   if (input) void rename.focusInput(input)
 })
 
-const { menu: t, settings } = useI18n()
+const { dialogs, menu: t } = useI18n()
 
 const { topMenus } = useAppMenu()
 const menuCls = useMenuUI()
@@ -79,11 +79,11 @@ const subMenuCls = useMenuUI({ content: 'min-w-44' })
         @dblclick="startRename"
         >{{ store.state.documentName }}</span
       >
-      <Tip v-if="!IS_DISABLE_SETTINGS_MODAL" :label="settings.title">
+      <Tip v-if="!IS_DISABLE_SETTINGS_MODAL" :label="dialogs.settings">
         <button
           type="button"
           data-test-id="app-settings-trigger"
-          :aria-label="settings.title"
+          :aria-label="dialogs.settings"
           class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted transition-colors hover:bg-hover hover:text-surface"
           @click="openSettingsDialog()"
         >

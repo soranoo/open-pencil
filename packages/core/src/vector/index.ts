@@ -1,5 +1,4 @@
 export * from './vectorize'
-export * from './handle-selection'
 
 export {
   breakAtVertex,

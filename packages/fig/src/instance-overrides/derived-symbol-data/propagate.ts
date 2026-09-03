@@ -8,7 +8,9 @@ import { overrideCandidates } from '../utils'
 function buildSizeOverriddenCloneUpdates(source: SceneNode, clone: SceneNode): Partial<SceneNode> {
   if (clone.type !== 'INSTANCE' || !source.derivedLayout) return {}
   const sourceLayout = source.derivedLayout
-  const updates: Partial<SceneNode> = {
+  return {
+    ...(sourceLayout.x === undefined ? {} : { x: sourceLayout.x }),
+    ...(sourceLayout.y === undefined ? {} : { y: sourceLayout.y }),
     derivedLayout: {
       ...sourceLayout,
       ...clone.derivedLayout,
@@ -16,9 +18,6 @@ function buildSizeOverriddenCloneUpdates(source: SceneNode, clone: SceneNode): P
       y: sourceLayout.y ?? clone.derivedLayout?.y
     }
   }
-  if (sourceLayout.x !== undefined) updates.x = sourceLayout.x
-  if (sourceLayout.y !== undefined) updates.y = sourceLayout.y
-  return updates
 }
 
 function buildCloneUpdates(

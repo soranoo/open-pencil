@@ -2,10 +2,8 @@ import { computed, type ComputedRef, type Ref } from 'vue'
 
 import { BLACK } from '@open-pencil/core/constants'
 import type { Editor } from '@open-pencil/core/editor'
-import { cloneVectorNetwork } from '@open-pencil/scene-graph'
 import type { SceneNode, Stroke, StrokeCap, StrokeJoin } from '@open-pencil/scene-graph'
 
-import { MIXED } from '#vue/controls/node-props/use'
 import type { MixedValue } from '#vue/controls/node-props/use'
 
 export type StrokeSides = 'ALL' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT' | 'CUSTOM'
@@ -20,18 +18,6 @@ export const SIDE_OPTIONS: { value: StrokeSides; label: string }[] = [
 ]
 
 export const BORDER_SIDES = ['top', 'right', 'bottom', 'left'] as const
-
-export const STROKE_CAP_VALUES: StrokeCap[] = [
-  'NONE',
-  'ROUND',
-  'SQUARE',
-  'ARROW_LINES',
-  'ARROW_EQUILATERAL'
-]
-
-export function isStrokeCapValue(value: string): value is StrokeCap {
-  return (STROKE_CAP_VALUES as string[]).includes(value)
-}
 export const DEFAULT_STROKE: Stroke = {
   color: BLACK,
   weight: 1,
@@ -57,16 +43,7 @@ export function createStrokeGeometryState({ nodes, merged }: StrokeGeometryState
     advancedActive: computed(
       () => nodes.value.length > 0 && nodes.value.every((node) => node.strokes.length > 0)
     ),
-    cap: computed(() => {
-      // A vertex cap differing from the node cap means the path shows more
-      // than one ending: report MIXED so any picker choice fires setCap.
-      const hasVertexOverride = nodes.value.some((node) =>
-        node.vectorNetwork?.vertices.some(
-          (vertex) => vertex.strokeCap && vertex.strokeCap !== node.strokeCap
-        )
-      )
-      return hasVertexOverride ? MIXED : merged('strokeCap')
-    }),
+    cap: computed(() => merged('strokeCap')),
     join: computed(() => merged('strokeJoin')),
     miterLimit: computed(() => merged('strokeMiterLimit'))
   }
@@ -87,18 +64,11 @@ export function createStrokeGeometryActions(
 
   function setCap(value: StrokeCap) {
     runForSelection('Change stroke cap', (node) => {
-      const changes: Partial<SceneNode> = {
-        strokeCap: value,
-        strokes: node.strokes.map((stroke) => ({ ...stroke, cap: value }))
-      }
-      // The picker speaks for the whole path: stale per-vertex overrides would
-      // silently win over the chosen cap on imported one-ended arrows.
-      if (node.vectorNetwork?.vertices.some((vertex) => vertex.strokeCap)) {
-        const network = cloneVectorNetwork(node.vectorNetwork)
-        for (const vertex of network.vertices) delete vertex.strokeCap
-        changes.vectorNetwork = network
-      }
-      editor.updateNodeWithUndo(node.id, changes, 'Change stroke cap')
+      editor.updateNodeWithUndo(
+        node.id,
+        { strokeCap: value, strokes: node.strokes.map((stroke) => ({ ...stroke, cap: value })) },
+        'Change stroke cap'
+      )
     })
   }
 

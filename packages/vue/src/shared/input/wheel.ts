@@ -1,8 +1,7 @@
 import { useEventListener } from '@vueuse/core'
-import { onScopeDispose, type Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { Editor } from '@open-pencil/core/editor'
-import { emitNavigationTrace } from '@open-pencil/core/profiler'
 
 import { createRafScheduler } from '#vue/shared/input/raf-scheduler'
 
@@ -50,7 +49,6 @@ export function wheelPanDelta(event: WheelPanInput): WheelPanDelta {
 }
 
 const WHEEL_ZOOM_SPEED = 1.25
-const NAVIGATION_SETTLE_DELAY_MS = 120
 
 function wheelDeltaModeScale(event: WheelEvent) {
   if (event.deltaMode === 1) return 0.05
@@ -72,25 +70,7 @@ export function setupWheelPanZoom(canvasRef: Ref<HTMLCanvasElement | null>, edit
     hasZoom: false
   }
 
-  let settleTimer: ReturnType<typeof setTimeout> | null = null
-
-  function scheduleSettle() {
-    if (settleTimer !== null) clearTimeout(settleTimer)
-    editor.setNavigationPhase('settling')
-    settleTimer = setTimeout(() => {
-      settleTimer = null
-      editor.setNavigationPhase('idle')
-      editor.requestRepaint()
-    }, NAVIGATION_SETTLE_DELAY_MS)
-  }
-
   function flushWheel() {
-    emitNavigationTrace('wheel:flush', {
-      deltaX: wheelAccum.deltaX,
-      deltaY: wheelAccum.deltaY,
-      zoomScale: wheelAccum.zoomScale,
-      zoom: wheelAccum.hasZoom
-    })
     editor.setHoveredNode(null)
     if (wheelAccum.hasZoom) {
       editor.setZoomAroundPoint(
@@ -105,7 +85,6 @@ export function setupWheelPanZoom(canvasRef: Ref<HTMLCanvasElement | null>, edit
     wheelAccum.deltaY = 0
     wheelAccum.zoomScale = 1
     wheelAccum.hasZoom = false
-    scheduleSettle()
   }
 
   const wheelScheduler = createRafScheduler(flushWheel)
@@ -113,20 +92,6 @@ export function setupWheelPanZoom(canvasRef: Ref<HTMLCanvasElement | null>, edit
   function onWheel(event: WheelEvent) {
     const canvas = canvasRef.value
     if (!canvas) return
-
-    emitNavigationTrace('wheel:received', {
-      deltaX: event.deltaX,
-      deltaY: event.deltaY,
-      deltaMode: event.deltaMode,
-      ctrlKey: event.ctrlKey,
-      metaKey: event.metaKey,
-      shiftKey: event.shiftKey,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      trusted: event.isTrusted
-    })
-
-    editor.setNavigationPhase(isWheelZoom(event) ? 'zoom' : 'pan', performance.now())
 
     if (isWheelZoom(event)) {
       const rect = canvas.getBoundingClientRect()
@@ -151,8 +116,4 @@ export function setupWheelPanZoom(canvasRef: Ref<HTMLCanvasElement | null>, edit
     },
     { passive: false }
   )
-
-  onScopeDispose(() => {
-    if (settleTimer !== null) clearTimeout(settleTimer)
-  })
 }

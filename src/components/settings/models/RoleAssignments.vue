@@ -12,30 +12,30 @@ import {
 } from '@/app/ai/models'
 import AppSelect from '@/components/ui/AppSelect.vue'
 
-const { ai } = useI18n()
+const { dialogs } = useI18n()
 const SAME_AS_DESIGN = '__design__'
 const NO_MODEL = '__none__'
 
 const roleDefinitions = computed(() => [
   {
     role: 'design' as const,
-    label: ai.value.modelRoleDesign,
-    description: ai.value.modelRoleDesignDescription
+    label: dialogs.value.modelRoleDesign,
+    description: dialogs.value.modelRoleDesignDescription
   },
   {
     role: 'review' as const,
-    label: ai.value.modelRoleReview,
-    description: ai.value.modelRoleReviewDescription
+    label: dialogs.value.modelRoleReview,
+    description: dialogs.value.modelRoleReviewDescription
   },
   {
     role: 'fast' as const,
-    label: ai.value.modelRoleFast,
-    description: ai.value.modelRoleFastDescription
+    label: dialogs.value.modelRoleFast,
+    description: dialogs.value.modelRoleFastDescription
   },
   {
     role: 'vision' as const,
-    label: ai.value.modelRoleVision,
-    description: ai.value.modelRoleVisionDescription
+    label: dialogs.value.modelRoleVision,
+    description: dialogs.value.modelRoleVisionDescription
   }
 ])
 
@@ -60,8 +60,8 @@ function optionsForRole(role: AIModelRole) {
   const canInherit =
     !isAgentModelProfile(design) && (role !== 'vision' || design?.capabilities.includes('vision'))
   return [
-    ...(canInherit ? [{ value: SAME_AS_DESIGN, label: ai.value.modelRoleUseDesign }] : []),
-    { value: NO_MODEL, label: ai.value.noModel },
+    ...(canInherit ? [{ value: SAME_AS_DESIGN, label: dialogs.value.modelRoleUseDesign }] : []),
+    { value: NO_MODEL, label: dialogs.value.noModel },
     ...profiles
   ]
 }

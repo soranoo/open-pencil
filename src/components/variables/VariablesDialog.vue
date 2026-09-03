@@ -53,7 +53,7 @@ const variableTypeIcons: Record<VariableType, Component> = {
   BOOLEAN: IconToggleLeft
 }
 
-const { panels, variableTypes: variableTypeText, variables, common } = useI18n()
+const { dialogs, panels, variableTypes: variableTypeText } = useI18n()
 
 const variableTypes: Array<{
   type: VariableType
@@ -123,18 +123,18 @@ function resizeHandleClass(resizing: boolean) {
     data-test-id="variables-dialog"
     :aria-describedby="undefined"
   >
-    <DialogTitle class="sr-only">{{ variables.localVariables }}</DialogTitle>
+    <DialogTitle class="sr-only">{{ dialogs.localVariables }}</DialogTitle>
     <div v-if="!ctx.hasCollections.value" class="flex flex-1 flex-col">
       <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-        <h2 class="text-sm font-semibold text-surface">{{ variables.localVariables }}</h2>
+        <h2 class="text-sm font-semibold text-surface">{{ dialogs.localVariables }}</h2>
         <DialogClose
-          :aria-label="common.close"
+          :aria-label="dialogs.close"
           class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"
         >
           <icon-lucide-x class="size-4" />
         </DialogClose>
       </div>
-      <AppPlaceholder :label="variables.noVariableCollections">
+      <AppPlaceholder :label="dialogs.noVariableCollections">
         <template #icon>
           <icon-lucide-folder class="size-5" />
         </template>
@@ -144,7 +144,7 @@ function resizeHandleClass(resizing: boolean) {
             class="cursor-pointer rounded bg-hover px-3 py-1.5 text-xs text-surface hover:bg-border"
             @click="ctx.addCollection"
           >
-            {{ variables.createCollection }}
+            {{ dialogs.createCollection }}
           </button>
         </template>
       </AppPlaceholder>
@@ -197,7 +197,7 @@ function resizeHandleClass(resizing: boolean) {
                     @select="ctx.startRenameCollection(ctx.activeCollectionId.value)"
                   >
                     <icon-lucide-pencil :class="menuCls.icon" />
-                    {{ variables.renameCollection }}
+                    {{ dialogs.renameCollection }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator class="mx-1.5 my-1 h-px bg-border" />
                   <DropdownMenuItem
@@ -207,7 +207,7 @@ function resizeHandleClass(resizing: boolean) {
                     @select="ctx.removeCollection(ctx.activeCollectionId.value)"
                   >
                     <icon-lucide-trash-2 :class="menuCls.icon" />
-                    {{ variables.deleteCollection }}
+                    {{ dialogs.deleteCollection }}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenuPortal>
@@ -218,10 +218,10 @@ function resizeHandleClass(resizing: boolean) {
                 v-model="ctx.searchTerm.value"
                 data-test-id="variables-search-input"
                 class="w-24 border-none bg-transparent text-xs text-surface outline-none placeholder:text-muted"
-                :placeholder="common.search"
+                :placeholder="dialogs.search"
               />
             </div>
-            <Tip :label="variables.createCollection">
+            <Tip :label="dialogs.createCollection">
               <button
                 data-test-id="variables-add-collection"
                 class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"
@@ -231,7 +231,7 @@ function resizeHandleClass(resizing: boolean) {
               </button>
             </Tip>
             <DialogClose
-              :aria-label="common.close"
+              :aria-label="dialogs.close"
               class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"
             >
               <icon-lucide-x class="size-4" />
@@ -292,14 +292,14 @@ function resizeHandleClass(resizing: boolean) {
                               @select="ctx.startRenameMode(modeId(header.column.id))"
                             >
                               <icon-lucide-pencil :class="menuCls.icon" />
-                              {{ variables.renameMode }}
+                              {{ dialogs.renameMode }}
                             </ContextMenuItem>
                             <ContextMenuItem
                               :class="menuCls.item"
                               @select="ctx.duplicateMode(modeId(header.column.id))"
                             >
                               <icon-lucide-copy :class="menuCls.icon" />
-                              {{ variables.duplicateMode }}
+                              {{ dialogs.duplicateMode }}
                             </ContextMenuItem>
                             <ContextMenuItem
                               v-if="getModeId(header.column.id) !== col.defaultModeId"
@@ -307,7 +307,7 @@ function resizeHandleClass(resizing: boolean) {
                               @select="ctx.setDefaultMode(modeId(header.column.id))"
                             >
                               <icon-lucide-pin :class="menuCls.icon" />
-                              {{ variables.setDefaultMode }}
+                              {{ dialogs.setDefaultMode }}
                             </ContextMenuItem>
                             <ContextMenuSeparator :class="menuCls.separator" />
                             <ContextMenuItem
@@ -316,7 +316,7 @@ function resizeHandleClass(resizing: boolean) {
                               @select="ctx.removeMode(modeId(header.column.id))"
                             >
                               <icon-lucide-trash-2 :class="menuCls.icon" />
-                              {{ variables.deleteMode }}
+                              {{ dialogs.deleteMode }}
                             </ContextMenuItem>
                           </ContextMenuContent>
                         </ContextMenuPortal>
@@ -337,7 +337,7 @@ function resizeHandleClass(resizing: boolean) {
                     />
                   </th>
                   <th class="w-8 px-1 py-2">
-                    <Tip :label="variables.addMode">
+                    <Tip :label="dialogs.addMode">
                       <button
                         data-test-id="variables-add-mode"
                         class="flex size-5 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted hover:bg-hover hover:text-surface"

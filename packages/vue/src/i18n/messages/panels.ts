@@ -246,8 +246,6 @@ export const panelMessageDefaults = {
   strokeCapButt: 'Butt cap',
   strokeCapRound: 'Round cap',
   strokeCapSquare: 'Square cap',
-  strokeCapArrowLines: 'Line arrow',
-  strokeCapArrowEquilateral: 'Triangle arrow',
   strokeJoin: 'Stroke join',
   strokeJoinMiter: 'Miter join',
   strokeJoinBevel: 'Bevel join',

@@ -21,7 +21,6 @@ async function fixtureRoot() {
         version: '1.0.0',
         scripts: { build: 'tsdown' },
         dependencies: { '@open-pencil/core': 'workspace:*', zod: '^4.0.0' },
-        exports: { '.': { bun: './src/index.ts', import: './dist/index.js' } },
         devDependencies: { typescript: '^5.0.0' },
         publishConfig: { access: 'public', main: './dist/index.js', types: './dist/index.d.ts' }
       },
@@ -39,7 +38,6 @@ describe('publishPackageJSON', () => {
         name: '@open-pencil/example',
         scripts: { build: 'tsdown' },
         dependencies: { '@open-pencil/core': 'workspace:*', zod: '^4.0.0' },
-        exports: { '.': { bun: './src/index.ts', import: './dist/index.js' } },
         devDependencies: { typescript: '^5.0.0' },
         publishConfig: { access: 'public', main: './dist/index.js' }
       },
@@ -49,7 +47,6 @@ describe('publishPackageJSON', () => {
     expect(json).toEqual({
       name: '@open-pencil/example',
       dependencies: { '@open-pencil/core': '^0.13.2', zod: '^4.0.0' },
-      exports: { '.': { import: './dist/index.js' } },
       main: './dist/index.js'
     })
   })
@@ -89,7 +86,6 @@ describe('preparePublishDirectories', () => {
       name: '@open-pencil/example',
       version: '1.0.0',
       dependencies: { '@open-pencil/core': '^0.13.2', zod: '^4.0.0' },
-      exports: { '.': { import: './dist/index.js' } },
       main: './dist/index.js',
       types: './dist/index.d.ts'
     })

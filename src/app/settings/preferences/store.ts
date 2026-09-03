@@ -2,8 +2,6 @@ import { useLocalStorage } from '@vueuse/core'
 
 import { DEFAULT_SNAPPING_PREFERENCES, type SnappingPreferences } from '@open-pencil/core/editor'
 
-export type CanvasRenderingMode = 'retained' | 'tiled'
-
 export interface AppPreferences {
   version: 1
   recovery: {
@@ -12,9 +10,6 @@ export interface AppPreferences {
   editing: {
     snapping: SnappingPreferences
   }
-  rendering: {
-    canvasMode: CanvasRenderingMode
-  }
 }
 
 export const DEFAULT_APP_PREFERENCES: Readonly<AppPreferences> = {
@@ -22,8 +17,7 @@ export const DEFAULT_APP_PREFERENCES: Readonly<AppPreferences> = {
   recovery: { enabled: true },
   editing: {
     snapping: { ...DEFAULT_SNAPPING_PREFERENCES }
-  },
-  rendering: { canvasMode: 'retained' }
+  }
 }
 
 const STORAGE_KEY = 'open-pencil:preferences:v1'
@@ -41,7 +35,6 @@ interface StoredSnappingPreferences {
 interface StoredAppPreferences {
   recovery?: { enabled?: unknown }
   editing?: { snapping?: StoredSnappingPreferences }
-  rendering?: { canvasMode?: unknown }
 }
 
 function isStoredAppPreferences(value: unknown): value is StoredAppPreferences {
@@ -72,9 +65,6 @@ function normalizePreferences(value: unknown): AppPreferences {
           DEFAULT_APP_PREFERENCES.editing.snapping.pixelGrid
         )
       }
-    },
-    rendering: {
-      canvasMode: stored?.rendering?.canvasMode === 'tiled' ? 'tiled' : 'retained'
     }
   }
 }
@@ -89,13 +79,6 @@ export function updateRecoveryEnabled(enabled: boolean): void {
   const preferences = structuredClone(appPreferences.value)
   preferences.recovery.enabled = enabled
   appPreferences.value = preferences
-}
-
-export function updateCanvasRenderingMode(canvasMode: CanvasRenderingMode): void {
-  appPreferences.value = {
-    ...appPreferences.value,
-    rendering: { canvasMode }
-  }
 }
 
 export function updateSnappingPreferences(changes: Partial<SnappingPreferences>): void {

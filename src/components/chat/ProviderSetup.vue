@@ -4,11 +4,11 @@ import { useI18n } from '@open-pencil/vue'
 import { openSettingsDialog } from '@/app/settings/dialog'
 import AppPlaceholder from '@/components/ui/AppPlaceholder.vue'
 
-const { ai } = useI18n()
+const { dialogs } = useI18n()
 </script>
 
 <template>
-  <AppPlaceholder data-test-id="provider-setup" :label="ai.connectProvider">
+  <AppPlaceholder data-test-id="provider-setup" :label="dialogs.connectAIProvider">
     <template #icon>
       <icon-lucide-sparkles class="size-5" />
     </template>
@@ -19,7 +19,7 @@ const { ai } = useI18n()
         class="w-full rounded bg-accent py-1.5 text-xs font-medium text-white hover:bg-accent/90"
         @click="openSettingsDialog('ai')"
       >
-        {{ ai.openProviderSettings }}
+        {{ dialogs.openProviderSettings }}
       </button>
     </template>
   </AppPlaceholder>

@@ -45,7 +45,7 @@ function boundedLimit(value: number | undefined, fallback: number): number {
   return Number.isFinite(value) && value && value > 0 ? value : fallback
 }
 
-export function hasPNGSignature(bytes: Uint8Array): boolean {
+function hasPNGSignature(bytes: Uint8Array): boolean {
   return PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)
 }
 

@@ -10,9 +10,8 @@ import {
   imageAttachmentsForMessage,
   visibleUserMessageText
 } from '@/app/ai/attachment/image/presentation'
-import ImageAttachment from '@/components/chat/attachment/image/ImageAttachment.vue'
 import { resolvedAppTheme } from '@/app/shell/theme'
-import { classifyToolState } from './tool-state'
+import ImageAttachment from '@/components/chat/attachment/image/ImageAttachment.vue'
 
 import type { UIDataTypes, UIMessage, UIMessagePart, UITools } from 'ai'
 
@@ -20,7 +19,7 @@ const { message, streaming = false } = defineProps<{
   message: UIMessage
   streaming?: boolean
 }>()
-const { ai } = useI18n()
+const { dialogs } = useI18n()
 const isDark = computed(() => resolvedAppTheme.value === 'dark')
 const markdownMode = computed(() => (streaming ? 'streaming' : 'static'))
 const imageAttachments = imageAttachmentsForMessage(message.id)
@@ -44,11 +43,9 @@ function hasErrorOutput(part: ToolPart): boolean {
 }
 
 function toolState(part: ToolPart): 'pending' | 'done' | 'error' {
-  return classifyToolState({
-    toolName: getToolName(part),
-    state: part.state,
-    output: part.output
-  })
+  if (part.state === 'output-error' || hasErrorOutput(part)) return 'error'
+  if (part.state === 'output-available') return 'done'
+  return 'pending'
 }
 
 function partKey(part: UIMessagePart<UIDataTypes, UITools>, index: number): string {
@@ -95,10 +92,10 @@ function partKey(part: UIMessagePart<UIDataTypes, UITools>, index: number): stri
                 <span class="text-[10px] text-muted">
                   {{
                     toolState(part) === 'pending'
-                      ? ai.toolRunning
+                      ? dialogs.toolRunning
                       : toolState(part) === 'done'
-                        ? ai.toolFinished
-                        : ai.toolError
+                        ? dialogs.toolFinished
+                        : dialogs.toolError
                   }}
                 </span>
                 <icon-lucide-chevron-down

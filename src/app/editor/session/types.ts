@@ -1,8 +1,7 @@
 import { createDefaultEditorState, type EditorState } from '@open-pencil/core/editor'
 
 import { AUTOSAVE_ENABLED_BY_DEFAULT } from '@/app/config/frontend-env'
-import type { EditorPreparation } from '@/app/editor/preparation/types'
-import type { NodeEditState } from '@/app/editor/vector/types'
+import type { NodeEditState } from '@/app/editor/vector-edit/types'
 import { appPreferences } from '@/app/settings/preferences/store'
 
 export function createInitialAppEditorState(pageId: string): AppEditorState {
@@ -23,8 +22,7 @@ export function createInitialAppEditorState(pageId: string): AppEditorState {
     nodeEditState: null,
     renameSelectionOpen: false,
     renameNodeId: null,
-    numberFieldFocused: false,
-    preparation: null
+    numberFieldFocused: false
   }
 }
 
@@ -44,5 +42,4 @@ export type AppEditorState = EditorState & {
   renameSelectionOpen: boolean
   renameNodeId: string | null
   numberFieldFocused: boolean
-  preparation: EditorPreparation | null
 }

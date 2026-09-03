@@ -1,9 +1,4 @@
-import {
-  cloneInstanceOverrideState,
-  setInstanceOverride,
-  type InstanceOverrideState,
-  type SceneNode
-} from '@open-pencil/scene-graph'
+import type { SceneNode } from '@open-pencil/scene-graph'
 import { copyDerivedGlyphs, copyGeometryPaths } from '@open-pencil/scene-graph/copy'
 
 import { weightToStyle } from '#core/text/fonts'
@@ -53,7 +48,7 @@ function snapshotPathText(
 
 type InstanceOverridesSnapshot = {
   instanceId: string
-  instanceOverrides: InstanceOverrideState
+  overrides: Record<string, unknown>
 }
 
 function containingInstanceIds(ctx: EditorContext, nodeId: string): string[] {
@@ -73,7 +68,7 @@ function snapshotInstanceOverrides(
   return instanceIds.flatMap((instanceId) => {
     const instance = ctx.graph.getNode(instanceId)
     return instance?.type === 'INSTANCE'
-      ? [{ instanceId, instanceOverrides: cloneInstanceOverrideState(instance.instanceOverrides) }]
+      ? [{ instanceId, overrides: structuredClone(instance.overrides) }]
       : []
   })
 }
@@ -81,7 +76,7 @@ function snapshotInstanceOverrides(
 function restoreInstanceOverrides(ctx: EditorContext, snapshots: InstanceOverridesSnapshot[]) {
   for (const snapshot of snapshots) {
     ctx.graph.updateNode(snapshot.instanceId, {
-      instanceOverrides: cloneInstanceOverrideState(snapshot.instanceOverrides)
+      overrides: structuredClone(snapshot.overrides)
     })
   }
 }
@@ -95,8 +90,9 @@ function applyTextInstanceOverride(
   for (const instanceId of instanceIds) {
     const instance = ctx.graph.getNode(instanceId)
     if (instance?.type !== 'INSTANCE') continue
-    setInstanceOverride(instance.instanceOverrides, instance.id, nodeId, 'text', text)
-    ctx.graph.updateNode(instance.id, { instanceOverrides: instance.instanceOverrides })
+    ctx.graph.updateNode(instanceId, {
+      overrides: { ...instance.overrides, [`${nodeId}:text`]: text }
+    })
   }
 }
 

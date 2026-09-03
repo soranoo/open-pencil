@@ -7,20 +7,18 @@ import { IS_TAURI } from '@open-pencil/core/constants'
 import { useAIChat } from '@/app/ai/chat/use'
 import { appCredentialServices } from '@/app/settings/credentials/app'
 import { settingsDialogOpen, settingsDialogSection } from '@/app/settings/dialog'
-import DiagnosticsSettingsPanel from '@/components/settings/diagnostics/DiagnosticsSettingsPanel.vue'
 import GeneralSettingsPanel from '@/components/settings/general/GeneralSettingsPanel.vue'
 import MCPConnectionsSection from '@/components/settings/mcp/MCPConnectionsSection.vue'
 import MCPSettingsPanel from '@/components/settings/mcp/MCPSettingsPanel.vue'
 import ModelsPanel from '@/components/settings/models/ModelsPanel.vue'
 import StockPhotoKeysSection from '@/components/settings/provider/StockPhotoKeysSection.vue'
-import UsageSettingsPanel from '@/components/settings/usage/UsageSettingsPanel.vue'
 import StorageSettingsPanel from '@/components/settings/storage/StorageSettingsPanel.vue'
 import VectorizeSettingsSection from '@/components/settings/vectorize/VectorizeSettingsSection.vue'
 import AppSwitch from '@/components/ui/AppSwitch.vue'
 import { AppDialogFooter, AppDialogHeader, AppDialogRoot } from '@/components/ui/dialog'
 import { IS_DISABLE_AI_CHAT } from '@/app/config/frontend-env'
 
-const { credentials, settings, common } = useI18n()
+const { dialogs } = useI18n()
 const { browserCredentialsRemembered, setRememberCredentials } = useAIChat()
 function onOpenChange(open: boolean): void {
   settingsDialogOpen.value = open
@@ -35,11 +33,12 @@ const rememberCredentials = computed({
 
 const credentialBackendLabel = computed(() => {
   void browserCredentialsRemembered.value
-  if (appCredentialServices.manager.backend === 'native') return credentials.value.backendNative
+  if (appCredentialServices.manager.backend === 'native')
+    return dialogs.value.credentialBackendNative
   if (appCredentialServices.manager.backend === 'browser') {
-    return credentials.value.backendBrowser
+    return dialogs.value.credentialBackendBrowser
   }
-  return credentials.value.backendMemory
+  return dialogs.value.credentialBackendMemory
 })
 
 const navigationClass =
@@ -55,13 +54,13 @@ const navigationClass =
     @update:open="onOpenChange"
   >
     <AppDialogHeader
-      :heading="settings.title"
-      :description="settings.description"
-      :close-label="common.close"
+      :heading="dialogs.settings"
+      :description="dialogs.settingsDescription"
+      :close-label="dialogs.close"
     />
 
     <div class="flex min-h-0 flex-1">
-      <nav class="w-40 shrink-0 border-r border-border p-2" :aria-label="settings.title">
+      <nav class="w-40 shrink-0 border-r border-border p-2" :aria-label="dialogs.settings">
         <button
           type="button"
           :class="navigationClass"
@@ -70,7 +69,7 @@ const navigationClass =
           @click="settingsDialogSection = 'general'"
         >
           <icon-lucide-settings class="size-3.5" />
-          {{ settings.general }}
+          {{ dialogs.settingsGeneral }}
         </button>
         <button
           v-if="!IS_DISABLE_AI_CHAT"
@@ -81,29 +80,8 @@ const navigationClass =
           @click="settingsDialogSection = 'ai'"
         >
           <icon-lucide-sparkles class="size-3.5" />
-          {{ settings.aiAndAgents }}
+          {{ dialogs.settingsAIAndAgents }}
         </button>
-        <button
-          type="button"
-          :class="navigationClass"
-          :data-state="settingsDialogSection === 'usage' ? 'active' : 'inactive'"
-          data-test-id="settings-section-usage"
-          @click="settingsDialogSection = 'usage'"
-        >
-          <icon-lucide-chart-no-axes-combined class="size-3.5" />
-          {{ settings.usage }}
-        </button>
-        <button
-          type="button"
-          :class="navigationClass"
-          :data-state="settingsDialogSection === 'diagnostics' ? 'active' : 'inactive'"
-          data-test-id="settings-section-diagnostics"
-          @click="settingsDialogSection = 'diagnostics'"
-        >
-          <icon-lucide-activity class="size-3.5" />
-          {{ settings.diagnostics }}
-        </button>
-
         <button
           type="button"
           :class="navigationClass"
@@ -112,7 +90,7 @@ const navigationClass =
           @click="settingsDialogSection = 'mcp'"
         >
           <icon-lucide-plug class="size-3.5" />
-          {{ settings.automation }}
+          {{ dialogs.settingsMCP }}
         </button>
         <button
           type="button"
@@ -122,7 +100,7 @@ const navigationClass =
           @click="settingsDialogSection = 'media'"
         >
           <icon-lucide-image class="size-3.5" />
-          {{ settings.media }}
+          {{ dialogs.settingsMedia }}
         </button>
         <button
           type="button"
@@ -132,7 +110,7 @@ const navigationClass =
           @click="settingsDialogSection = 'storage'"
         >
           <icon-lucide-cloud class="size-3.5" />
-          {{ settings.storage }}
+          {{ dialogs.settingsStorage }}
         </button>
       </nav>
 
@@ -146,10 +124,6 @@ const navigationClass =
         >
           <ModelsPanel />
         </section>
-
-        <UsageSettingsPanel v-else-if="settingsDialogSection === 'usage'" />
-
-        <DiagnosticsSettingsPanel v-else-if="settingsDialogSection === 'diagnostics'" />
 
         <section
           v-else-if="settingsDialogSection === 'mcp'"
@@ -165,7 +139,7 @@ const navigationClass =
           class="flex flex-col gap-2.5"
           data-test-id="settings-media-panel"
         >
-          <h3 class="text-xs font-semibold text-surface">{{ settings.media }}</h3>
+          <h3 class="text-xs font-semibold text-surface">{{ dialogs.settingsMedia }}</h3>
           <StockPhotoKeysSection />
           <VectorizeSettingsSection />
         </section>
@@ -179,15 +153,15 @@ const navigationClass =
         <AppSwitch
           v-if="!IS_TAURI"
           v-model="rememberCredentials"
-          :label="credentials.remember"
+          :label="dialogs.rememberCredentials"
           data-test-id="settings-remember-credentials"
         />
         <div>
           <p v-if="!IS_TAURI" class="text-[10px] text-surface">
-            {{ credentials.remember }}
+            {{ dialogs.rememberCredentials }}
           </p>
           <p class="text-[10px] text-muted" data-test-id="settings-credential-backend">
-            {{ credentials.storage({ backend: credentialBackendLabel }) }}
+            {{ dialogs.credentialStorage({ backend: credentialBackendLabel }) }}
           </p>
         </div>
       </div>
@@ -197,7 +171,7 @@ const navigationClass =
           class="rounded bg-accent px-3 py-1.5 text-[11px] font-medium text-white hover:bg-accent/90"
           data-test-id="app-settings-done"
         >
-          {{ common.done }}
+          {{ dialogs.done }}
         </button>
       </DialogClose>
     </AppDialogFooter>

@@ -8,22 +8,28 @@ import { WEB_FONT_PROVIDER_IDS, WEB_FONT_PROVIDER_LABELS } from '@open-pencil/co
 import type { WebFontProviderId } from '@open-pencil/core/text'
 import { useI18n } from '@open-pencil/vue'
 import Tip from '@/components/ui/Tip.vue'
-import AppButton from '@/components/ui/AppButton.vue'
+import { useButtonUI } from '@/components/ui/button'
 import { usePopoverUI } from '@/components/ui/popover'
 
-const { fonts, common } = useI18n()
+const { dialogs } = useI18n()
 const cls = usePopoverUI({ content: 'isolate z-[51] w-80 p-3' })
-const trigger = 'shrink-0'
-const secondaryButton = {
-  color: 'neutral' as const,
-  variant: 'soft' as const,
-  size: 'xs' as const
-}
-const primaryButton = {
-  color: 'primary' as const,
-  variant: 'solid' as const,
-  size: 'xs' as const
-}
+const trigger = useButtonUI({
+  tone: 'ghost',
+  size: 'iconSm',
+  ui: { base: 'shrink-0' }
+})
+const secondaryButton = useButtonUI({
+  tone: 'ghost',
+  size: 'sm',
+  ui: {
+    base: 'w-full bg-input px-2 py-1.5 text-[10px] font-medium text-surface hover:bg-hover disabled:opacity-50'
+  }
+})
+const primaryButton = useButtonUI({
+  tone: 'accent',
+  size: 'sm',
+  ui: { base: 'w-full px-2 py-1.5 text-[10px] font-medium disabled:opacity-50' }
+})
 const showDownloadedFonts = isTauri()
 const webFontProviderIds = WEB_FONT_PROVIDER_IDS
 const popoverOpen = ref(false)
@@ -69,11 +75,11 @@ onMounted(() => {
 
 <template>
   <PopoverRoot v-model:open="popoverOpen" @update:open="setPopoverOpen">
-    <Tip :label="fonts.settingsTitle" :disabled="popoverOpen">
+    <Tip :label="dialogs.fontSettings" :disabled="popoverOpen">
       <PopoverTrigger
         data-test-id="font-settings-trigger"
-        :aria-label="fonts.settingsTitle"
-        :class="trigger"
+        :aria-label="dialogs.fontSettings"
+        :class="trigger.base"
       >
         <icon-lucide-settings class="size-3.5" />
       </PopoverTrigger>
@@ -97,12 +103,12 @@ onMounted(() => {
               <icon-lucide-type class="size-4" />
             </div>
             <div>
-              <h3 class="text-[11px] font-semibold text-surface">{{ fonts.settingsTitle }}</h3>
+              <h3 class="text-[11px] font-semibold text-surface">{{ dialogs.fontSettings }}</h3>
               <p class="mt-0.5 text-[10px] leading-relaxed text-muted">
                 {{
                   showDownloadedFonts
-                    ? fonts.settingsDesktopDescription
-                    : fonts.settingsBrowserDescription
+                    ? dialogs.fontSettingsDesktopDescription
+                    : dialogs.fontSettingsBrowserDescription
                 }}
               </p>
             </div>
@@ -110,21 +116,21 @@ onMounted(() => {
 
           <div class="grid gap-1.5 rounded border border-border bg-input/40 p-2 text-[10px]">
             <div class="flex justify-between gap-3 text-muted">
-              <span>{{ fonts.localFonts }}</span>
+              <span>{{ dialogs.localFonts }}</span>
               <span class="text-surface">{{ accessStateLabel }}</span>
             </div>
             <div class="flex justify-between gap-3 text-muted">
-              <span>{{ fonts.onlineFonts }}</span>
+              <span>{{ dialogs.onlineFonts }}</span>
               <span class="text-surface">{{
-                onlineFontsEnabled ? common.enabled : common.disabled
+                onlineFontsEnabled ? dialogs.enabled : dialogs.disabled
               }}</span>
             </div>
             <div v-if="showDownloadedFonts" class="flex justify-between gap-3 text-muted">
-              <span>{{ fonts.downloadedCache }}</span>
+              <span>{{ dialogs.downloadedCache }}</span>
               <span class="text-surface">{{ cacheCount }} fonts · {{ cacheSize }}</span>
             </div>
             <div v-if="showDownloadedFonts" class="flex justify-between gap-3 text-muted">
-              <span>{{ common.lastUpdated }}</span>
+              <span>{{ dialogs.lastUpdated }}</span>
               <span class="text-surface">{{ cacheUpdatedLabel }}</span>
             </div>
           </div>
@@ -132,49 +138,45 @@ onMounted(() => {
           <div class="space-y-1.5">
             <div class="grid grid-cols-[1fr_auto] gap-2 rounded border border-border p-2">
               <div>
-                <p class="text-[10px] font-medium text-surface">{{ fonts.systemFontAccess }}</p>
+                <p class="text-[10px] font-medium text-surface">{{ dialogs.systemFontAccess }}</p>
                 <p class="mt-0.5 text-[10px] leading-relaxed text-muted">
                   {{
                     accessState === 'granted'
-                      ? fonts.systemFontsAvailable
-                      : fonts.allowBrowserFontAccess
+                      ? dialogs.systemFontsAvailable
+                      : dialogs.allowBrowserFontAccess
                   }}
                 </p>
               </div>
-              <AppButton
+              <button
                 type="button"
                 data-test-id="font-settings-request-access"
-                :color="secondaryButton.color"
-                :variant="secondaryButton.variant"
-                :size="secondaryButton.size"
+                :class="secondaryButton.base"
                 :disabled="busyAction !== null || !canRequestLocalFonts"
                 @click="requestAccess"
               >
-                {{ busyAction === 'access' ? common.requesting : common.allow }}
-              </AppButton>
+                {{ busyAction === 'access' ? dialogs.requesting : dialogs.allow }}
+              </button>
             </div>
 
             <div class="grid gap-2 rounded border border-border p-2">
               <div class="grid grid-cols-[1fr_auto] gap-2">
                 <div>
                   <p class="text-[10px] font-medium text-surface">
-                    {{ fonts.onlineFontProviders }}
+                    {{ dialogs.onlineFontProviders }}
                   </p>
                   <p class="mt-0.5 text-[10px] leading-relaxed text-muted">
-                    {{ fonts.downloadMissingWebFonts }}
+                    {{ dialogs.downloadMissingWebFonts }}
                   </p>
                 </div>
-                <AppButton
+                <button
                   type="button"
                   data-test-id="font-settings-toggle-online-fonts"
-                  :color="secondaryButton.color"
-                  :variant="secondaryButton.variant"
-                  :size="secondaryButton.size"
+                  :class="secondaryButton.base"
                   :disabled="busyAction !== null"
                   @click="setOnlineFontsEnabled(!onlineFontsEnabled)"
                 >
-                  {{ onlineFontsEnabled ? common.disable : common.enable }}
-                </AppButton>
+                  {{ onlineFontsEnabled ? dialogs.disable : dialogs.enable }}
+                </button>
               </div>
 
               <div class="grid gap-1 border-t border-border pt-2">
@@ -201,48 +203,42 @@ onMounted(() => {
               class="grid grid-cols-[1fr_auto] gap-2 rounded border border-border p-2"
             >
               <div>
-                <p class="text-[10px] font-medium text-surface">{{ fonts.fallbackPacks }}</p>
+                <p class="text-[10px] font-medium text-surface">{{ dialogs.fallbackPacks }}</p>
                 <p class="mt-0.5 text-[10px] leading-relaxed text-muted">
-                  {{ fonts.downloadFallbackPacksDescription }}
+                  {{ dialogs.downloadFallbackPacksDescription }}
                 </p>
               </div>
-              <AppButton
+              <button
                 type="button"
                 data-test-id="font-settings-download-fallbacks"
-                :color="primaryButton.color"
-                :variant="primaryButton.variant"
-                :size="primaryButton.size"
+                :class="primaryButton.base"
                 :disabled="busyAction !== null"
                 @click="downloadFallbacks"
               >
-                {{ busyAction === 'download' ? common.downloading : common.download }}
-              </AppButton>
+                {{ busyAction === 'download' ? dialogs.downloading : dialogs.download }}
+              </button>
             </div>
           </div>
 
           <div v-if="showDownloadedFonts" class="grid grid-cols-2 gap-1.5">
-            <AppButton
+            <button
               type="button"
               data-test-id="font-settings-refresh-cache"
-              :color="secondaryButton.color"
-              :variant="secondaryButton.variant"
-              :size="secondaryButton.size"
+              :class="secondaryButton.base"
               :disabled="busyAction !== null"
               @click="refreshSummary"
             >
-              {{ common.refresh }}
-            </AppButton>
-            <AppButton
+              {{ dialogs.refresh }}
+            </button>
+            <button
               type="button"
               data-test-id="font-settings-clear-cache"
-              :color="secondaryButton.color"
-              :variant="secondaryButton.variant"
-              :size="secondaryButton.size"
+              :class="secondaryButton.base"
               :disabled="busyAction !== null || cacheCount === 0"
               @click="clearCache"
             >
-              {{ fonts.clearCache }}
-            </AppButton>
+              {{ dialogs.clearCache }}
+            </button>
           </div>
 
           <p

@@ -219,13 +219,14 @@ function parseAutomationHealth(value: unknown): AutomationHealth | null {
   ) {
     return null
   }
-  const health: AutomationHealth = { status: value.status }
-  if (version !== undefined) health.version = version
-  if (installCommand !== undefined) health.installCommand = installCommand
-  if (authRequired !== undefined) health.authRequired = authRequired
-  if (discoveryPath !== undefined) health.discoveryPath = discoveryPath
-  if (tools !== undefined) health.tools = tools
-  return health
+  return {
+    status: value.status,
+    ...(version !== undefined ? { version } : {}),
+    ...(installCommand !== undefined ? { installCommand } : {}),
+    ...(authRequired !== undefined ? { authRequired } : {}),
+    ...(discoveryPath !== undefined ? { discoveryPath } : {}),
+    ...(tools !== undefined ? { tools } : {})
+  }
 }
 
 export async function readAutomationHealth(

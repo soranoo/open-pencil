@@ -25,7 +25,7 @@ import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
 import { findAssetPage } from '@/components/assets-panel/page'
 import AppInput from '@/components/ui/AppInput.vue'
 import AppPlaceholder from '@/components/ui/AppPlaceholder.vue'
-import AppButton from '@/components/ui/AppButton.vue'
+import { useButtonUI } from '@/components/ui/button'
 import { AppDialogRoot, useDialogUI } from '@/components/ui/dialog'
 import { useMenuUI } from '@/components/ui/menu'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
@@ -78,13 +78,8 @@ const previewURL = useObjectUrl(previewBlob)
 const previewLoading = ref(false)
 const insertingAssetId = ref<string | null>(null)
 let previewRequestId = 0
-const insertButton = {
-  color: 'neutral' as const,
-  variant: 'ghost' as const,
-  size: 'sm' as const,
-  shape: 'square' as const
-}
-const primaryButton = { color: 'primary' as const, variant: 'solid' as const, size: 'md' as const }
+const insertButton = useButtonUI({ tone: 'ghost', size: 'iconSm' })
+const primaryButton = useButtonUI({ tone: 'accent', size: 'md' })
 const dialog = useDialogUI()
 const contextMenu = useMenuUI({ content: 'min-w-44' })
 const viewOptions = computed(() => [
@@ -332,8 +327,9 @@ async function insertSelectedAsset() {
         class="min-w-0 flex-1"
         :placeholder="panels.searchLocalComponents"
       />
-      <AppButton
-        v-bind="insertButton"
+      <button
+        type="button"
+        :class="insertButton.base"
         class="relative"
         :aria-label="libraryUpdateCount > 0 ? panels.reviewLibraryUpdates : panels.manageLibraries"
         @click="openLibraries"
@@ -345,7 +341,7 @@ async function insertSelectedAsset() {
         >
           {{ libraryUpdateCount }}
         </span>
-      </AppButton>
+      </button>
       <SegmentedControl
         v-model="assetView"
         data-test-id="assets-view-toggle"
@@ -439,25 +435,27 @@ async function insertSelectedAsset() {
                 </span>
                 <div v-if="assetView === 'list'" class="flex shrink-0 items-center">
                   <Tip v-if="asset.docsURL" :label="panels.openDocumentation">
-                    <AppButton
-                      v-bind="insertButton"
+                    <button
+                      type="button"
+                      :class="insertButton.base"
                       data-test-id="asset-docs"
                       @pointerdown.stop
                       @click.stop="asset.docsURL ? openExternalLink(asset.docsURL) : undefined"
                     >
                       <icon-lucide-book-open class="size-3" />
-                    </AppButton>
+                    </button>
                   </Tip>
                   <Tip :label="commands.createInstance">
-                    <AppButton
-                      v-bind="insertButton"
+                    <button
+                      type="button"
+                      :class="insertButton.base"
                       data-test-id="asset-insert"
                       :disabled="insertingAssetId === asset.id"
                       @pointerdown.stop
                       @click.stop="insertAsset(asset)"
                     >
                       <icon-lucide-plus class="size-3" />
-                    </AppButton>
+                    </button>
                   </Tip>
                 </div>
               </div>
@@ -558,14 +556,14 @@ async function insertSelectedAsset() {
               </p>
             </div>
           </div>
-          <AppButton
-            v-bind="primaryButton"
+          <button
             data-test-id="asset-details-insert"
+            :class="primaryButton.base"
             class="mt-3 w-full"
             @click="insertSelectedAsset"
           >
             {{ panels.insertInstance }}
-          </AppButton>
+          </button>
         </div>
 
         <div class="min-w-0 p-4">
@@ -591,17 +589,14 @@ async function insertSelectedAsset() {
             <h3 class="text-[11px] font-medium tracking-wider text-muted uppercase">
               {{ panels.documentation }}
             </h3>
-            <AppButton
-              color="primary"
-              variant="link"
-              size="xs"
+            <button
               data-test-id="asset-details-docs"
-              class="mt-1"
+              class="mt-1 inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-component hover:bg-component/10"
               @click="selectedAsset.docsURL ? openExternalLink(selectedAsset.docsURL) : undefined"
             >
               <icon-lucide-book-open class="size-3" />
               {{ panels.openDocs }}
-            </AppButton>
+            </button>
           </section>
 
           <section v-if="selectedAsset.variants.length > 0">
