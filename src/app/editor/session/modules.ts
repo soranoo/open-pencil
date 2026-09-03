@@ -79,6 +79,7 @@ export function createEditorStoreModules(
     fitCurrentPageToViewport: documentIO.fitCurrentPageToViewport,
     saveFigFile: documentIO.saveFigFile,
     saveFigFileAs: documentIO.saveFigFileAs,
+    getFigFile: documentIO.getFigFile,
     getDocumentFilePath: documentIO.getDocumentFilePath,
     getSourceIdentity: documentIO.getSourceIdentity,
     getStorageBinding: documentIO.getStorageBinding,
@@ -90,6 +91,7 @@ export function createEditorStoreModules(
     setStorageDocumentSource: documentIO.setStorageDocumentSource,
     setPlannedFilePath: documentIO.setPlannedFilePath,
     startWatchingCurrentFile: documentIO.startWatchingCurrentFile,
+    hasUnsavedChanges: documentIO.hasUnsavedChanges,
     dispose: () => {
       editor.releaseGraphResources()
       editor.dispose()

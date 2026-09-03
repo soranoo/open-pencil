@@ -1,5 +1,6 @@
 import { createDefaultEditorState, type EditorState } from '@open-pencil/core/editor'
 
+import { AUTOSAVE_ENABLED_BY_DEFAULT } from '@/app/config/frontend-env'
 import type { EditorPreparation } from '@/app/editor/preparation/types'
 import type { NodeEditState } from '@/app/editor/vector/types'
 import { appPreferences } from '@/app/settings/preferences/store'
@@ -16,7 +17,7 @@ export function createInitialAppEditorState(pageId: string): AppEditorState {
     actionToast: null,
     mobileDrawerSnap: 'closed',
     clipboardHTML: '',
-    autosaveEnabled: false,
+    autosaveEnabled: AUTOSAVE_ENABLED_BY_DEFAULT,
     cursorCanvasX: null,
     cursorCanvasY: null,
     nodeEditState: null,

@@ -1,3 +1,8 @@
+import type {
+  RemoteControlEvent,
+  RemoteControlModel
+} from '@open-pencil/automation/protocol'
+import { encodeBase64 } from '@open-pencil/core/bytes'
 /**
  * Browser-side automation handler.
  *
@@ -6,6 +11,9 @@
  */
 import { randomHex } from '@open-pencil/core/random'
 
+import { useAIChat } from '@/app/ai/chat/use'
+import { replaceAIModelSettings } from '@/app/ai/models'
+import type { AIModelSettings } from '@/app/ai/models/types'
 import { makeFigmaFromStore } from '@/app/automation/bridge/figma-factory'
 import { createAutomationCommandHandlers } from '@/app/automation/bridge/handlers'
 import type { EditorStore } from '@/app/editor/active-store'
@@ -22,8 +30,61 @@ export function connectAutomation(
 
   const { handleRequest: handleAutomationRequest } =
     createAutomationCommandHandlers(makeFigmaFromStore)
+  const { sendAI, setAPIKey } = useAIChat()
 
-  async function handleRequest(_id: string, command: string, args: unknown): Promise<unknown> {
+  function sendEvent(socket: WebSocket, event: RemoteControlEvent) {
+    if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(event))
+  }
+
+  async function handleRequest(
+    socket: WebSocket,
+    id: string,
+    command: string,
+    args: unknown
+  ): Promise<unknown> {
+    if (command === 'send_ai_input') {
+      const request = args as { prompt?: unknown; model?: RemoteControlModel }
+      const prompt = request.prompt
+      if (typeof prompt !== 'string' || prompt.trim() === '') {
+        throw new Error('Missing "prompt" in args')
+      }
+      if (request.model) {
+        replaceAIModelSettings(request.model.settings as AIModelSettings)
+        if (typeof request.model.apiKey === 'string') await setAPIKey(request.model.apiKey)
+      }
+      sendEvent(socket, { type: 'event', event: 'ai.started', requestId: id })
+      try {
+        const result = await sendAI(prompt, (update) => {
+          sendEvent(socket, {
+            type: 'event',
+            event: update.done ? 'ai.completed' : 'ai.stream',
+            requestId: id,
+            content: update.content,
+            done: update.done,
+            usage: update.usage
+          })
+        })
+        return { ok: true, result }
+      } catch (error) {
+        sendEvent(socket, {
+          type: 'event',
+          event: 'ai.failed',
+          requestId: id,
+          error: error instanceof Error ? error.message : String(error),
+          done: true
+        })
+        throw error
+      }
+    }
+
+    if (command === 'download_fig') {
+      const data = await getStore().getFigFile()
+      return {
+        ok: true,
+        result: { base64: encodeBase64(data), fileName: `${getStore().state.documentName}.fig` }
+      }
+    }
+
     return handleAutomationRequest(getStore(), command, args)
   }
 
@@ -56,7 +117,7 @@ export function connectAutomation(
         }
         if (msg.type !== 'request' || !msg.id) return
         try {
-          const result = await handleRequest(msg.id, msg.command, msg.args)
+          const result = await handleRequest(socket, msg.id, msg.command, msg.args)
           if (socket.readyState !== WebSocket.OPEN) return
           socket.send(JSON.stringify({ type: 'response', id: msg.id, ...(result as object) }))
         } catch (e) {

@@ -2,6 +2,8 @@ import { watchDebounced } from '@vueuse/core'
 
 import type { EditorState } from '@open-pencil/core/editor'
 
+import { IS_DISABLE_LOCAL_UNSAVED_WORK } from '@/app/config/frontend-env'
+
 type AutosaveState = EditorState & { autosaveEnabled: boolean }
 
 type AutosaveOptions = {
@@ -22,7 +24,12 @@ export function createAutosave({
   let disposed = false
 
   function canSave(version: number) {
-    return version > getSavedVersion() && state.autosaveEnabled && hasWritableSource()
+    return (
+      !IS_DISABLE_LOCAL_UNSAVED_WORK &&
+      version > getSavedVersion() &&
+      state.autosaveEnabled &&
+      hasWritableSource()
+    )
   }
 
   async function runSaves() {
@@ -53,13 +60,15 @@ export function createAutosave({
     return saving
   }
 
-  const stop = watchDebounced(
-    () => state.sceneVersion,
-    (version) => {
-      void requestSave(version).catch(reportFailure)
-    },
-    { debounce: 3000 }
-  )
+  const stop = IS_DISABLE_LOCAL_UNSAVED_WORK
+    ? () => undefined
+    : watchDebounced(
+        () => state.sceneVersion,
+        (version) => {
+          void requestSave(version).catch(reportFailure)
+        },
+        { debounce: 3000 }
+      )
 
   return {
     requestSave,

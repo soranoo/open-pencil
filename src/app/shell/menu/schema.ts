@@ -1,5 +1,8 @@
 import type { EditorCommandId } from '@open-pencil/vue'
 
+import { designPermission } from '@/app/automation/server-bridge'
+import { IS_BACKEND_MODE } from '@/app/config/frontend-env'
+
 export type AppMenuTarget = 'all' | 'browser' | 'native'
 
 export type AppMenuIcon =
@@ -65,45 +68,54 @@ export const APP_MENU_SCHEMA = [
     label: 'File',
     paletteIcon: 'file',
     items: [
-      { id: 'new', label: 'New', shortcut: 'MOD+N' },
-      { id: 'open', label: 'Open…', shortcut: 'MOD+O' },
-      { id: 'open-recent', label: 'Open Recent', target: 'native' },
-      { id: 'open-storage-workspace', label: 'Open Storage Workspace…', handler: 'shell' },
-      { type: 'separator' },
-      { id: 'save', label: 'Save', shortcut: 'MOD+S' },
-      { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' },
-      { type: 'separator' },
-      {
-        id: 'export-selection',
-        label: 'Export Selection',
-        palette: { icon: 'download' },
-        shortcut: 'MOD+SHIFT+E',
-        sub: [
-          {
-            id: 'export-png',
-            label: 'PNG',
-            palette: { icon: 'download', label: 'exportSelectionAsPNG' }
-          },
-          {
-            id: 'export-svg',
-            label: 'SVG',
-            palette: { icon: 'download', label: 'exportSelectionAsSVG' }
-          },
-          {
-            id: 'export-pptx',
-            label: 'PPTX',
-            palette: { icon: 'download', label: 'exportSelectionAsPPTX' }
-          },
-          {
-            id: 'export-fig',
-            label: '.fig',
-            palette: { icon: 'download', label: 'exportSelectionAsFig' }
-          }
-        ]
-      },
-      { type: 'separator' },
-      { id: 'autosave', label: 'Autosave', checkbox: true },
-      { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
+      ...(IS_BACKEND_MODE
+        ? [
+            ...(designPermission.value === 'write'
+              ? [{ id: 'save', label: 'Save', shortcut: 'MOD+S' }]
+              : []),
+            { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' }
+          ]
+        : [
+            { id: 'new', label: 'New', shortcut: 'MOD+N' },
+            { id: 'open', label: 'Open…', shortcut: 'MOD+O' },
+            { id: 'open-recent', label: 'Open Recent', target: 'native' },
+            { id: 'open-storage-workspace', label: 'Open Storage Workspace…', handler: 'shell' },
+            { type: 'separator' },
+            { id: 'save', label: 'Save', shortcut: 'MOD+S' },
+            { id: 'save-as', label: 'Save As…', shortcut: 'MOD+SHIFT+S' },
+            { type: 'separator' },
+            {
+              id: 'export-selection',
+              label: 'Export Selection',
+              palette: { icon: 'download' },
+              shortcut: 'MOD+SHIFT+E',
+              sub: [
+                {
+                  id: 'export-png',
+                  label: 'PNG',
+                  palette: { icon: 'download', label: 'exportSelectionAsPNG' }
+                },
+                {
+                  id: 'export-svg',
+                  label: 'SVG',
+                  palette: { icon: 'download', label: 'exportSelectionAsSVG' }
+                },
+                {
+                  id: 'export-pptx',
+                  label: 'PPTX',
+                  palette: { icon: 'download', label: 'exportSelectionAsPPTX' }
+                },
+                {
+                  id: 'export-fig',
+                  label: '.fig',
+                  palette: { icon: 'download', label: 'exportSelectionAsFig' }
+                }
+              ]
+            },
+            { type: 'separator' },
+            { id: 'autosave', label: 'Autosave', checkbox: true },
+            { id: 'close', label: 'Close Tab', shortcut: 'MOD+W' }
+          ])
     ]
   },
   {

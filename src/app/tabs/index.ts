@@ -12,6 +12,7 @@ import { setOpenPencilStore } from '@/app/browser-bridge'
 import { describeDiagnosticError, recordStorageFailure } from '@/app/diagnostics'
 import { readFigDocument } from '@/app/document/io/fig'
 import { applyImportedDocument } from '@/app/document/io/imported-document'
+import { IS_DISABLE_LOCAL_UNSAVED_WORK, IS_DISABLE_TAB } from '@/app/config/frontend-env'
 import type { DocumentSourceIdentity } from '@/app/document/io/types'
 import { getRecoveryStore, type RecoverySnapshotMeta } from '@/app/document/recovery'
 import { setActiveEditorStore } from '@/app/editor/active-store'
@@ -93,6 +94,10 @@ export function getTabsSnapshot(): Tab[] {
 }
 
 export function createTab(store?: EditorStore, initialGraph?: SceneGraph): Tab {
+  if (IS_DISABLE_TAB && tabsRef.value.length > 0) {
+    throw new Error('Tab creation is disabled. Only one tab is allowed.')
+  }
+
   const s = store ?? createEditorStore(initialGraph)
   const tab: Tab = { id: generateTabId(), store: s, kind: 'document' }
   tabsRef.value = [...tabsRef.value, tab]
@@ -495,6 +500,7 @@ export async function openFileInNewTab(
 }
 
 export async function listRecoverySnapshots(): Promise<RecoverySnapshotMeta[]> {
+  if (IS_DISABLE_LOCAL_UNSAVED_WORK) return []
   return getRecoveryStore().list()
 }
 
@@ -503,6 +509,7 @@ export async function discardRecoverySnapshot(id: string): Promise<void> {
 }
 
 export async function restoreRecoverySnapshot(id: string): Promise<void> {
+  if (IS_DISABLE_LOCAL_UNSAVED_WORK) return
   const snapshot = await getRecoveryStore().read(id)
   if (!snapshot) throw new Error('Recovery snapshot is no longer available')
 
@@ -540,6 +547,7 @@ export async function restoreRecoverySnapshot(id: string): Promise<void> {
 }
 
 export async function prepareForReload(): Promise<void> {
+  if (IS_DISABLE_LOCAL_UNSAVED_WORK) return
   await Promise.all(tabsRef.value.map((tab) => tab.store.persistRecoveryNow()))
 }
 

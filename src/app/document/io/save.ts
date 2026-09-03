@@ -6,7 +6,9 @@ import { documentNameFromFigPath } from '@/app/document/io/names'
 import { chooseBrowserFigSaveHandle, chooseTauriFigSavePath } from '@/app/document/io/save-targets'
 import type { DocumentSourceAccess } from '@/app/document/io/types'
 import { createDocumentWriter } from '@/app/document/io/write'
+import { IS_BACKEND_MODE } from '@/app/config/frontend-env'
 import { IS_TAURI } from '@/constants'
+import { ref } from 'vue'
 
 type SaveDocumentState = EditorState & { documentName: string }
 
@@ -17,6 +19,8 @@ type SaveActionsOptions = Omit<DocumentSourceAccess, 'getSavedVersion'> & {
   onWriteSuccess?: (version: number) => void | Promise<void>
   onDownloadSuccess?: (version: number) => void | Promise<void>
 }
+
+export const isSaving = ref<boolean>(false)
 
 export function createSaveActions({
   state,
@@ -52,6 +56,16 @@ export function createSaveActions({
   }
 
   async function saveFigFile() {
+    isSaving.value = true
+    if (IS_BACKEND_MODE) {
+      const version = state.sceneVersion
+      const bridge = window.openPencilServer
+      if (!bridge) throw new Error('Backend mode requires the server save bridge')
+      await bridge.saveDebounced()
+      setSavedVersion(version)
+      return
+    }
+
     const filePath = getFilePath()
     const fileHandle = getFileHandle()
     const storageBinding = getStorageBinding()
@@ -67,6 +81,7 @@ export function createSaveActions({
     } else {
       await saveFigFileAs()
     }
+    isSaving.value = false
   }
 
   async function saveFigFileAs() {

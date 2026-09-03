@@ -39,6 +39,7 @@ import {
   updateMenuChecked
 } from '@/app/shell/menu/entry'
 import { useEditorStore } from '@/app/editor/active-store'
+import { IS_DISABLE_SETTINGS_MODAL } from '@/app/config/frontend-env'
 import { openSettingsDialog } from '@/app/settings/dialog'
 
 const store = useEditorStore()
@@ -78,7 +79,7 @@ const subMenuCls = useMenuUI({ content: 'min-w-44' })
         @dblclick="startRename"
         >{{ store.state.documentName }}</span
       >
-      <Tip :label="settings.title">
+      <Tip v-if="!IS_DISABLE_SETTINGS_MODAL" :label="settings.title">
         <button
           type="button"
           data-test-id="app-settings-trigger"

@@ -76,6 +76,9 @@
       "@open-pencil/scene-graph/*": [
         "./packages/scene-graph/src/*"
       ],
+      "@open-pencil/automation/protocol": [
+        "./packages/automation/src/protocol.ts"
+      ],
       "#pen/*": [
         "./packages/pen/src/*"
       ],

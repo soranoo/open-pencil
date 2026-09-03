@@ -17,7 +17,7 @@ import type { EditorStore } from '@/app/editor/active-store'
 import { ensureGraphFonts } from '@/app/editor/fonts'
 import { useLibraryService } from '@/app/libraries'
 
-export const MAX_AGENT_STEPS = 50
+export const MAX_AGENT_STEPS = 150
 
 class RunState {
   toolLog: ToolLogEntry[] = []
@@ -79,7 +79,16 @@ export function createAITools(store: EditorStore) {
     [
       ...CORE_TOOLS,
       ...EXTENDED_TOOLS.filter((def) =>
-        ['get_components', 'list_libraries', 'insert_library_component'].includes(def.name)
+        [
+          'get_components',
+          'list_libraries',
+          'insert_library_component',
+          'create_component',
+          'create_instance',
+          'combine_as_variants',
+          'node_to_component',
+          'design_to_component_map'
+        ].includes(def.name)
       )
     ],
     {

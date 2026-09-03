@@ -1,12 +1,9 @@
 import { spawn } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { mkdir } from 'node:fs/promises'
-import type { IncomingMessage } from 'node:http'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 
 import type { Plugin } from 'vite'
 
+import { AUTOMATION_HTTP_PORT } from '@open-pencil/core/constants'
+import { getSocketPath, platformHasUnixSockets } from '@open-pencil/mcp/transport'
 import { serializeDisabledTools } from '@open-pencil/mcp/tools'
 import { platformHasUnixSockets } from '@open-pencil/mcp/transport'
 
@@ -111,133 +108,94 @@ function safeRuntimeId(value: string): string {
 }
 
 // TODO: production — bundle MCP server as Tauri sidecar or spawn via shell plugin
-export function automationPlugin(
-  authToken: string | null,
-  options: AutomationPluginOptions
-): Plugin {
+export function automationPlugin(authToken: string | null, corsOrigin: string): Plugin {
   let child: ReturnType<typeof spawn> | null = null
-  let lifecycle = Promise.resolve()
-  let configuration: DevMCPConfiguration = {
-    authenticationEnabled: true,
-    rootDirectory: '',
-    disabledTools: []
-  }
-
-  function enqueue(operation: () => Promise<void>): Promise<void> {
-    const next = lifecycle.then(operation, operation)
-    lifecycle = next.catch(() => undefined)
-    return next
-  }
-
-  async function stopChild(): Promise<void> {
-    const running = child
-    if (!running) return
-    child = null
-    const exited = new Promise<void>((resolve) => {
-      running.once('exit', () => resolve())
-    })
-    running.kill()
-    let timeout: ReturnType<typeof setTimeout> | undefined
-    const timedOut = new Promise<boolean>((resolve) => {
-      timeout = setTimeout(() => resolve(true), CHILD_EXIT_TIMEOUT_MS)
-    })
-    const exitedGracefully = await Promise.race([exited.then(() => false), timedOut])
-    if (timeout) clearTimeout(timeout)
-    if (!exitedGracefully && running.exitCode === null) {
-      running.kill('SIGKILL')
-      await exited
-    }
-  }
-
-  async function startChild(): Promise<void> {
-    const runtimeDir = join(tmpdir(), 'open-pencil-mcp', safeRuntimeId(options.runtimeId))
-    await mkdir(runtimeDir, { recursive: true, mode: 0o700 })
-    const socketPath = platformHasUnixSockets() ? join(runtimeDir, 'mcp.sock') : null
-    const discoveryPath = join(runtimeDir, 'mcp.json')
-    const command = ['bun', 'run', 'packages/mcp/src/index.ts']
-    const spawnCommand = options.portlessServiceName ? 'portless' : command[0]
-    const spawnArgs = options.portlessServiceName
-      ? ['run', '--name', options.portlessServiceName, ...command]
-      : command.slice(1)
-    const spawned = spawn(spawnCommand, spawnArgs, {
-      stdio: ['ignore', 'inherit', 'pipe'],
-      env: createAutomationEnvironment({
-        authToken,
-        baseEnv: process.env,
-        configuration,
-        corsOrigin: options.corsOrigin,
-        discoveryPath,
-        httpPort: options.httpPort,
-        socketPath
-      })
-    })
-    child = spawned
-
-    spawned.on('error', (err) => {
-      console.error(`[MCP] Failed to spawn automation server: ${err.message}`)
-      if (child === spawned) child = null
-    })
-
-    spawned.stderr.on('data', (data: Buffer) => {
-      const text = data.toString()
-      if (text.includes('EADDRINUSE')) {
-        console.error(
-          `\x1b[31m[MCP] MCP bind failed (${options.browserURL}${socketPath ? ` or socket ${socketPath}` : ''}). Is another OpenPencil instance running?\x1b[0m`
-        )
-        spawned.kill()
-        if (child === spawned) child = null
-        return
-      }
-      process.stderr.write(data)
-    })
-
-    spawned.on('exit', (code) => {
-      if (code && code !== 0) console.error(`[MCP] Server exited with code ${code}`)
-      if (child === spawned) child = null
-    })
-  }
-
-  async function restartChild(nextConfiguration: DevMCPConfiguration): Promise<void> {
-    configuration = nextConfiguration
-    await stopChild()
-    await startChild()
-  }
+  let starting: Promise<void> | null = null
 
   return {
     name: 'open-pencil-automation',
     async configureServer(server) {
-      server.middlewares.use(DEV_MCP_RESTART_PATH, (request, response, next) => {
-        if (request.method !== 'POST') {
-          next()
-          return
-        }
-        if (!authToken || request.headers.authorization !== `Bearer ${authToken}`) {
-          response.statusCode = 401
-          response.end('Unauthorized')
-          return
-        }
-        void (async () => {
-          try {
-            const rawConfiguration = await readDevMCPConfiguration(request)
-            const nextConfiguration = parseDevMCPConfiguration(rawConfiguration)
-            if (!nextConfiguration) {
-              response.statusCode = 400
-              response.end('Invalid MCP configuration')
-              return
-            }
-            await enqueue(() => restartChild(nextConfiguration))
-            response.statusCode = 204
-            response.end()
-          } catch (error) {
-            response.statusCode = devMCPConfigurationErrorStatus(error)
-            response.end(error instanceof Error ? error.message : String(error))
+      if (authToken) {
+        server.middlewares.use('/__open-pencil/automation-token', (request, response, next) => {
+          if (request.method !== 'GET') {
+            next()
+            return
           }
-        })()
-      })
-      await enqueue(startChild)
+          response.statusCode = 200
+          response.setHeader('content-type', 'application/json')
+          response.end(JSON.stringify({ token: authToken }))
+        })
+      }
+      if (child || starting) return
+
+      starting = (async () => {
+        // Only resolve and forward the socket path on platforms that support
+        // Unix domain sockets. On Windows the MCP server falls back to TCP,
+        // and forwarding OPENPENCIL_MCP_SOCKET would cause it to attempt a
+        // socket listen that cannot succeed.
+        const socketPath = platformHasUnixSockets() ? await getSocketPath() : null
+
+        const childEnv = { ...process.env }
+        delete childEnv.OPENPENCIL_MCP_SOCKET
+        delete childEnv.OPENPENCIL_MCP_AUTH_TOKEN
+
+        const spawned = spawn('bun', ['run', 'packages/mcp/src/index.ts'], {
+          stdio: ['ignore', 'inherit', 'pipe'],
+          env: {
+            ...childEnv,
+            PORT: String(AUTOMATION_HTTP_PORT),
+            OPENPENCIL_MCP_TCP: '1',
+            ...(socketPath ? { OPENPENCIL_MCP_SOCKET: socketPath } : {}),
+            ...(authToken ? { OPENPENCIL_MCP_AUTH_TOKEN: authToken } : {}),
+            OPENPENCIL_MCP_CORS_ORIGIN: corsOrigin,
+            OPENPENCIL_MCP_ROOT: process.cwd()
+          }
+        })
+        child = spawned
+
+        spawned.on('error', (err) => {
+          console.error(`[MCP] Failed to spawn automation server: ${err.message}`)
+          if (child === spawned) child = null
+        })
+
+        spawned.stderr.on('data', (data: Buffer) => {
+          const text = data.toString()
+          if (text.includes('EADDRINUSE')) {
+            console.error(
+              `\x1b[31m[MCP] MCP bind failed (port ${AUTOMATION_HTTP_PORT}${socketPath ? ` or socket ${socketPath}` : ''}). Is another OpenPencil instance running?\x1b[0m`
+            )
+            spawned.kill()
+            if (child === spawned) child = null
+            return
+          }
+          process.stderr.write(data)
+        })
+
+        spawned.on('exit', (code) => {
+          if (code && code !== 0) {
+            console.error(`[MCP] Server exited with code ${code}`)
+          }
+          if (child === spawned) child = null
+        })
+      })()
+
+      try {
+        await starting
+      } finally {
+        starting = null
+      }
     },
     async buildEnd() {
-      await enqueue(stopChild)
+      if (starting) {
+        try {
+          await starting
+        } catch {
+          void 0
+        }
+      }
+      child?.kill()
+      child = null
+      starting = null
     }
   }
 }

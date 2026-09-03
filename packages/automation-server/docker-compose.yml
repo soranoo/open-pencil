@@ -1,0 +1,87 @@
+name: openpencil-automation-server
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-openpencil}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openpencil}
+      POSTGRES_DB: ${POSTGRES_DB:-openpencil}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      # runs once on first container start — creates the `designs` table automatically
+      - ./src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openpencil}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-openpencil}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-openpencil-secret}
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # web console — http://localhost:9001
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the bucket on first run, then exits. `docker compose up` will
+  # show it as "exited (0)" — that's expected, not a failure.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      S3_BUCKET: ${S3_BUCKET:-openpencil-designs}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-openpencil}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-openpencil-secret}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$S3_ACCESS_KEY_ID $$S3_SECRET_ACCESS_KEY &&
+      mc mb --ignore-existing local/$$S3_BUCKET
+      "
+
+  # server:
+  #   build:
+  #     context: ./packages/automation-server
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     minio-init:
+  #       condition: service_completed_successfully
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     # Overrides for .env's host-oriented defaults — inside the compose network,
+  #     # services reach each other by service name, not localhost.
+  #     POSTGRES_DATABASE_URL: postgres://${POSTGRES_USER:-openpencil}:${POSTGRES_PASSWORD:-openpencil}@postgres:5432/${POSTGRES_DB:-openpencil}
+  #     S3_ENDPOINT: http://minio:9000
+  #     S3_FORCE_PATH_STYLE: 'true'
+  #     # No display in a container — must run headless.
+  #     OPENPENCIL_HEADLESS: 'true'
+  #     # Wherever the Open-Pencil frontend is reachable from inside this network —
+  #     # a sibling container/service, or an externally reachable URL. Not started by
+  #     # this compose file (it's a separate app/deployment).
+  #     OPENPENCIL_URL: http://host.docker.internal:1420
+  #     FRONTEND_URL: http://host.docker.internal:1420
+  #   ports:
+  #     - '8787:8787'
+
+volumes:
+  pg-data:
+  minio-data:

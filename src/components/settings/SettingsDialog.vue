@@ -18,6 +18,7 @@ import StorageSettingsPanel from '@/components/settings/storage/StorageSettingsP
 import VectorizeSettingsSection from '@/components/settings/vectorize/VectorizeSettingsSection.vue'
 import AppSwitch from '@/components/ui/AppSwitch.vue'
 import { AppDialogFooter, AppDialogHeader, AppDialogRoot } from '@/components/ui/dialog'
+import { IS_DISABLE_AI_CHAT } from '@/app/config/frontend-env'
 
 const { credentials, settings, common } = useI18n()
 const { browserCredentialsRemembered, setRememberCredentials } = useAIChat()
@@ -72,6 +73,7 @@ const navigationClass =
           {{ settings.general }}
         </button>
         <button
+          v-if="!IS_DISABLE_AI_CHAT"
           type="button"
           :class="navigationClass"
           :data-state="settingsDialogSection === 'ai' ? 'active' : 'inactive'"
@@ -138,7 +140,7 @@ const navigationClass =
         <GeneralSettingsPanel v-if="settingsDialogSection === 'general'" />
 
         <section
-          v-else-if="settingsDialogSection === 'ai'"
+          v-else-if="settingsDialogSection === 'ai' && !IS_DISABLE_AI_CHAT"
           class="flex h-full flex-col"
           data-test-id="settings-ai-panel"
         >

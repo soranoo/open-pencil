@@ -3,6 +3,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import { useI18n } from '@open-pencil/vue'
 import { useAIChat } from '@/app/ai/chat/use'
+import { IS_DISABLE_AI_CHAT, IS_DISABLE_UI_CODE_TAB } from '@/app/config/frontend-env'
 
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
@@ -29,6 +30,7 @@ const { panels } = useI18n()
           {{ panels.design }}
         </TabsTrigger>
         <TabsTrigger
+          v-if="!IS_DISABLE_UI_CODE_TAB"
           value="code"
           data-test-id="properties-tab-code"
           class="relative flex items-center gap-1 rounded px-2.5 py-1 text-[11px] text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface after:absolute after:inset-x-2 after:-bottom-[9px] after:h-0.5 after:rounded-full after:bg-transparent data-[state=active]:after:bg-accent"
@@ -37,6 +39,7 @@ const { panels } = useI18n()
           {{ panels.code }}
         </TabsTrigger>
         <TabsTrigger
+          v-if="!IS_DISABLE_AI_CHAT"
           value="ai"
           data-test-id="properties-tab-ai"
           class="relative flex items-center gap-1 rounded px-2.5 py-1 text-[11px] text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface after:absolute after:inset-x-2 after:-bottom-[9px] after:h-0.5 after:rounded-full after:bg-transparent data-[state=active]:after:bg-accent"
@@ -57,6 +60,7 @@ const { panels } = useI18n()
       </TabsContent>
 
       <TabsContent
+        v-if="!IS_DISABLE_UI_CODE_TAB"
         value="code"
         class="flex min-h-0 flex-1 flex-col"
         :force-mount="true"
@@ -66,6 +70,7 @@ const { panels } = useI18n()
       </TabsContent>
 
       <TabsContent
+        v-if="!IS_DISABLE_AI_CHAT"
         value="ai"
         class="flex min-h-0 flex-1 flex-col"
         :force-mount="true"

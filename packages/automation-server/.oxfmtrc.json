@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": false,
+  "ignorePatterns": [],
+  "sortImports": {
+    "order": "asc",
+    "ignoreCase": true,
+    "newlinesBetween": true,
+    "internalPattern": ["@/"],
+    "groups": [["builtin", "type-builtin"], ["external", "type-external"], "style", "unknown"]
+  }
+}

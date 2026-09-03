@@ -1,0 +1,56 @@
+{
+  "name": "@open-pencil/automation-server",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Prompt-to-design backend that drives the real Open-Pencil web app in a real browser via @open-pencil/automation — same AI chat pipeline and .fig exporter a human user gets, no separate headless AI engine. Same HTTP API as the original headless server template this was forked from.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-pencil/open-pencil.git",
+    "directory": "packages/automation-server"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun run tsdown --config tsdown.config.ts",
+    "start": "node dist/index.js",
+    "migrate": "psql \"$POSTGRES_DATABASE_URL\" -f src/db/schema.sql",
+    "test": "bun test tests",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3",
+    "@aws-sdk/s3-request-presigner": "^3",
+    "@hono/node-server": "^2.1.1",
+    "@hono/standard-validator": "^0.4.0",
+    "@hono/swagger-ui": "^0.6.1",
+    "@open-pencil/automation": "workspace:*",
+    "@open-pencil/core": "workspace:*",
+    "@open-pencil/scene-graph": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "ai": "^7.0.68",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^2.0.1",
+    "assert-never": "^1.4.0",
+    "hono": "^4.13.3",
+    "hono-openapi": "^1.3.1",
+    "ioredis": "^6.0.0",
+    "jose": "^6.2.5",
+    "pg": "^8",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "tsdown": "^0.22.14",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

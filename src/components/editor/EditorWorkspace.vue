@@ -19,6 +19,7 @@ import Tip from '@/components/ui/Tip.vue'
 import Toolbar from '@/components/Toolbar/Toolbar.vue'
 import { loadEditorLayout, saveEditorLayout } from '@/app/shell/layout-storage'
 import splitterTheme from '@/theme/splitter'
+import { IS_DISABLE_COLLABORATION } from '@/app/config/frontend-env'
 
 const showChrome = appRuntimeConfig.showChrome
 const store = useEditorStore()
@@ -67,7 +68,7 @@ const horizontalSplitterStyles = tv(splitterTheme)({ direction: 'horizontal' })
       :max-size="30"
       class="flex flex-col"
     >
-      <div class="flex shrink-0 items-center justify-between border-b border-border px-1.5 py-1.5">
+      <div class="flex shrink-0 items-center justify-between border-b border-border px-1.5 py-1.5" v-show="!IS_DISABLE_COLLABORATION">
         <CollabPanel />
       </div>
       <PropertiesPanel />

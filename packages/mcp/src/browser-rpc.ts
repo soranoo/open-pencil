@@ -26,6 +26,7 @@ type BrowserMessage = {
   result?: unknown
   error?: string
   ok?: boolean
+  [key: string]: unknown
 }
 
 function stripEnvelope(msg: BrowserMessage): Record<string, unknown> {
@@ -253,6 +254,14 @@ export function createBrowserRPCBridge({ authToken, onConnectionChange }: Browse
     }
   }
 
+  function broadcastBrowserEvent(msg: BrowserMessage, ws: WebSocket) {
+    if (browserWs !== ws || !browserRegistered) return
+    for (const client of clients) {
+      if (client === ws || !authenticatedClients.has(client)) continue
+      sendJSON(client, msg)
+    }
+  }
+
   function handleMessage(data: string, ws: WebSocket) {
     if (bridgeClosed) return
     let parsed: unknown
@@ -280,6 +289,7 @@ export function createBrowserRPCBridge({ authToken, onConnectionChange }: Browse
           return
         }
         authenticatedClients.add(ws)
+        sendJSON(ws, { type: 'auth', ok: true })
       } else if (msg.token !== undefined) {
         ws.close()
       }
@@ -304,6 +314,10 @@ export function createBrowserRPCBridge({ authToken, onConnectionChange }: Browse
     }
     if (msg.type === 'request') {
       void handleClientRequest(ws, msg)
+      return
+    }
+    if (msg.type === 'event') {
+      broadcastBrowserEvent(msg, ws)
       return
     }
     if (msg.type === 'response') handleBrowserResponse(msg, ws)
