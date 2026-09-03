@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { tv } from 'tailwind-variants'
-import { useUrlSearchParams } from '@vueuse/core'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 
 import { formatShortcut, useI18n, useViewportKind } from '@open-pencil/vue'
 
 import { useEditorStore } from '@/app/editor/active-store'
+import { appRuntimeConfig } from '@/app/runtime/config'
 import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { activeTab } from '@/app/tabs'
 import CanvasSplitRoot from '@/components/canvas/CanvasSplitRoot.vue'
@@ -21,10 +21,9 @@ import { loadEditorLayout, saveEditorLayout } from '@/app/shell/layout-storage'
 import splitterTheme from '@/theme/splitter'
 import { IS_DISABLE_COLLABORATION } from '@/app/config/frontend-env'
 
-const params = useUrlSearchParams('history')
-const showChrome = !('no-chrome' in params)
+const showChrome = appRuntimeConfig.showChrome
 const store = useEditorStore()
-const { dialogs } = useI18n()
+const { editor } = useI18n()
 const { isMobile } = useViewportKind()
 const initialEditorLayout = loadEditorLayout()
 const horizontalSplitterStyles = tv(splitterTheme)({ direction: 'horizontal' })
@@ -105,7 +104,7 @@ const horizontalSplitterStyles = tv(splitterTheme)({ direction: 'horizontal' })
           store.state.documentName
         }}</span>
         <Tip
-          :label="dialogs.showUI({ shortcut: formatShortcut(appMenuShortcut('toggle-ui')) ?? '' })"
+          :label="editor.showUI({ shortcut: formatShortcut(appMenuShortcut('toggle-ui')) ?? '' })"
         >
           <button
             data-test-id="editor-show-ui"

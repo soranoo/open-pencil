@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { AlertDialogCancel, AlertDialogDescription, AlertDialogTitle } from 'reka-ui'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { AlertDialogCancel, AlertDialogDescription, AlertDialogTitle } from 'reka-ui'
-
 import { useI18n } from '@open-pencil/vue'
 import { recoveryEnabled } from '@/app/document/recovery/preferences'
 import { useNotificationMessages } from '@/app/i18n/notifications'
@@ -10,9 +9,9 @@ import { discardRecoverySnapshot, listRecoverySnapshots, restoreRecoverySnapshot
 import type { RecoverySnapshotMeta } from '@/app/document/recovery'
 import { formatStorageBytes } from '@/app/storage/format-bytes'
 import { toast } from '@/app/shell/ui'
-import { AppAlertDialogRoot, AppDialogBody, AppDialogFooter } from '@/components/ui/dialog'
+import AppButton from '@/components/ui/AppButton.vue'
 
-const { dialogs } = useI18n()
+const { recovery, common } = useI18n()
 const notifications = useNotificationMessages()
 const route = useRoute()
 const snapshots = ref<RecoverySnapshotMeta[]>([])
@@ -35,7 +34,7 @@ async function restore(snapshot: RecoverySnapshotMeta): Promise<void> {
   } catch (error) {
     toast.error(
       notifications.value.operationFailed({
-        error: error instanceof Error ? error.message : dialogs.value.recoveryFailed
+        error: error instanceof Error ? error.message : recovery.value.restoreFailed
       })
     )
   } finally {
@@ -69,12 +68,12 @@ onMounted(async () => {
   <AppAlertDialogRoot v-model:open="open" size="md" data-test-id="recovery-dialog">
     <div class="border-b border-border px-4 py-3">
       <AlertDialogTitle class="text-sm font-semibold text-surface">
-        {{ dialogs.recoverUnsavedWork }}
+        {{ recovery.dialogTitle }}
       </AlertDialogTitle>
     </div>
     <AppDialogBody class="space-y-3">
       <AlertDialogDescription class="text-xs text-muted">
-        {{ dialogs.recoverUnsavedWorkDescription }}
+        {{ recovery.dialogDescription }}
       </AlertDialogDescription>
       <div class="max-h-72 space-y-2 overflow-y-auto">
         <div
@@ -89,30 +88,30 @@ onMounted(async () => {
               {{ updatedLabel(snapshot) }} · {{ formatStorageBytes(snapshot.byteLength) }}
             </p>
           </div>
-          <button
-            type="button"
-            class="rounded px-2 py-1 text-xs text-danger hover:bg-danger/10 disabled:opacity-50"
+          <AppButton
+            color="error"
+            variant="ghost"
+            size="xs"
             :disabled="busyId !== null"
             @click="discard(snapshot)"
           >
-            {{ dialogs.discard }}
-          </button>
-          <button
-            type="button"
-            class="rounded bg-accent px-2.5 py-1 text-xs text-white disabled:opacity-50"
+            {{ recovery.discard }}
+          </AppButton>
+          <AppButton
+            color="primary"
+            variant="solid"
+            size="xs"
             :disabled="busyId !== null"
             @click="restore(snapshot)"
           >
-            {{ dialogs.restore }}
-          </button>
+            {{ recovery.restore }}
+          </AppButton>
         </div>
       </div>
     </AppDialogBody>
     <AppDialogFooter>
       <AlertDialogCancel as-child>
-        <button class="rounded px-3 py-1.5 text-xs text-muted hover:bg-hover">
-          {{ dialogs.close }}
-        </button>
+        <AppButton color="neutral" variant="ghost">{{ common.close }}</AppButton>
       </AlertDialogCancel>
     </AppDialogFooter>
   </AppAlertDialogRoot>
