@@ -43,6 +43,7 @@ function createEditor() {
   const handlers = new Map<EditorEventName, Set<(...args: never[]) => void>>()
   const editor: TestEditor = {
     state: {
+      loading: false,
       renderVersion: 0,
       selectedIds: new Set<string>()
     } as Editor['state'],
@@ -252,33 +253,29 @@ describe('canvas render loop', () => {
     }
   })
 
-  test('renders after an injected suspension finishes without a version change', () => {
+  test('renders after supplied view state finishes loading without a version change', () => {
     const scheduler = createFrameScheduler()
     try {
       const { editor, emit } = createEditor()
-      const viewState = { ...editor.state }
-      let suspended = false
+      const viewState = { ...editor.state, loading: false }
       let renders = 0
       const loop = createCanvasRenderLoop(
         editor,
         () => {
           renders++
         },
-        {
-          getRenderState: () => viewState,
-          shouldSuspendRender: () => suspended
-        }
+        { getRenderState: () => viewState }
       )
 
       emit('repaint:requested')
       scheduler.flush()
       loop.markRendered()
-      suspended = true
+      viewState.loading = true
       emit('repaint:requested')
       scheduler.flush()
       expect(renders).toBe(1)
 
-      suspended = false
+      viewState.loading = false
       scheduler.flush()
       expect(renders).toBe(2)
     } finally {

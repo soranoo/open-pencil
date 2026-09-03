@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 
 import { SceneGraph } from '@open-pencil/core'
 import { collectSubtrees } from '@open-pencil/core/editor/clipboard/subtree-history'
-import { createInstanceOverrideState } from '@open-pencil/scene-graph'
 
 function pageId(graph: SceneGraph): string {
   return graph.getPages()[0].id
@@ -78,7 +77,7 @@ describe('cloneTree deep-copies boundVariables, overrides, and styleRuns', () =>
     const graph = new SceneGraph()
     const node = graph.createNode('RECTANGLE', pageId(graph), {
       name: 'Original',
-      instanceOverrides: createInstanceOverrideState()
+      overrides: { someKey: 'someValue' }
     })
     const original = graph.getNode(node.id)
 
@@ -87,7 +86,7 @@ describe('cloneTree deep-copies boundVariables, overrides, and styleRuns', () =>
       (() => {
         throw new Error('clone failed')
       })()
-    expect(clone.instanceOverrides).not.toBe(original?.instanceOverrides)
+    expect(clone.overrides).not.toBe(original.overrides)
   })
 
   test('clone.styleRuns is not the same reference as original', () => {
@@ -230,7 +229,7 @@ describe('instance child bindings are independent from component', () => {
       })()
     const instanceChild = graph.getChildren(instance.id)[0]
 
-    expect(instanceChild.instanceOverrides).not.toBe(compChild.instanceOverrides)
+    expect(instanceChild.overrides).not.toBe(compChild.overrides)
   })
 
   test('instance child source.fig is not shared with component child', () => {

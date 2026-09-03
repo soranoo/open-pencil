@@ -1,5 +1,4 @@
 import { BLACK, DEFAULT_FONT_FAMILY, DEFAULT_STROKE_MITER_LIMIT } from './constants'
-import { createInstanceOverrideState } from './instance-overrides'
 import type { NodeType, SceneNode, SourceMetadata } from './types'
 
 export function createDefaultSourceMetadata(): SourceMetadata {
@@ -141,7 +140,7 @@ export function createDefaultNode(
     pointCount: 5,
     starInnerRadius: 0.38,
     componentId: null,
-    instanceOverrides: createInstanceOverrideState(),
+    overrides: {},
     componentPropertyDefinitions: [],
     componentPropertyReferences: [],
     componentPropertyAssignments: {},

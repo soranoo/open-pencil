@@ -16,7 +16,7 @@ const { initialSection = 'browse' } = defineProps<{
 const open = defineModel<boolean>({ required: true })
 const editor = useEditorStore()
 const service = useLibraryService()
-const { panels, common } = useI18n()
+const { panels, dialogs } = useI18n()
 
 async function openPublish() {
   open.value = false
@@ -58,7 +58,7 @@ const navigationClass =
     <AppDialogHeader
       :heading="panels.manageLibraries"
       :description="panels.manageLibrariesDescription"
-      :close-label="common.close"
+      :close-label="dialogs.close"
     >
       <template #actions>
         <button

@@ -45,6 +45,7 @@ export interface EditorSharedState {
   documentName: string
   rulerTheme?: RulerTheme
   sceneVersion: number
+  loading: boolean
 }
 
 export interface EditorViewState {
@@ -89,20 +90,11 @@ export interface EditorViewState {
   pageColor: Color
   panY: number
   zoom: number
-  navigation: NavigationState
   renderVersion: number
   enteredContainerId: string | null
   nodeEditState?: RenderOverlays['nodeEditState'] | null
   cursorCanvasX?: number | null
   cursorCanvasY?: number | null
-}
-
-export type NavigationPhase = 'idle' | 'pan' | 'zoom' | 'momentum' | 'settling'
-
-export interface NavigationState {
-  phase: NavigationPhase
-  generation: number
-  lastInputAt: number
 }
 
 export interface EditorState extends EditorSharedState, EditorViewState {}
@@ -132,7 +124,6 @@ export interface EditorEvents extends SceneGraphEvents {
     viewport: { panX: number; panY: number; zoom: number },
     previous: { panX: number; panY: number; zoom: number }
   ) => void
-  'navigation:changed': (navigation: NavigationState, previous: NavigationState) => void
 }
 
 export type EditorEventName = keyof EditorEvents
@@ -140,12 +131,7 @@ export type EditorEventName = keyof EditorEvents
 export interface EditorOptions {
   graph?: SceneGraph
   state?: EditorState
-  loadFont?: (
-    family: string,
-    style: string,
-    characters?: string,
-    signal?: AbortSignal
-  ) => Promise<ArrayBuffer | null>
+  loadFont?: (family: string, style: string, characters?: string) => Promise<ArrayBuffer | null>
   resolveFigmaClipboardImages?: FigmaClipboardImageResolver
   getViewportSize?: () => { width: number; height: number }
   skipInitialGraphSetup?: boolean
@@ -156,12 +142,7 @@ export interface EditorContext {
   set graph(g: SceneGraph)
   undo: UndoManager
   state: EditorState
-  loadFont: (
-    family: string,
-    style: string,
-    characters?: string,
-    signal?: AbortSignal
-  ) => Promise<ArrayBuffer | null>
+  loadFont: (family: string, style: string, characters?: string) => Promise<ArrayBuffer | null>
   resolveFigmaClipboardImages: FigmaClipboardImageResolver | null
   getViewportSize: () => { width: number; height: number }
   getCk: () => CanvasKit | null
@@ -175,12 +156,6 @@ export interface EditorContext {
   ) => void
   setSelectedIds: (ids: Set<string>) => void
   setActiveTool: (tool: Tool) => void
-  setNavigationPhase: (phase: NavigationPhase, inputAt?: number) => void
   runLayoutForNode: (id: string) => void
-  runMutationWithLayout: <T>(
-    operation: () => T | Promise<T>,
-    fallbackId?: string,
-    beforeLayout?: (result: T) => Promise<void> | void
-  ) => Promise<T>
   subscribeToGraph: () => void
 }

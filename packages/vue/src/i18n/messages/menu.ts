@@ -14,10 +14,6 @@ export const menuMessageDefaults = {
   save: 'Save',
   saveAs: 'Save as…',
   exportSelection: 'Export selection…',
-  exportSelectionAsPNG: 'Export selection as PNG',
-  exportSelectionAsSVG: 'Export selection as SVG',
-  exportSelectionAsPPTX: 'Export selection as PPTX',
-  exportSelectionAsFig: 'Export selection as .fig',
   autosave: 'Auto-save to local file',
   closeTab: 'Close tab',
 

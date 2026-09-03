@@ -3,7 +3,6 @@ import { defineConfig } from 'tsdown'
 export default defineConfig({
   entry: {
     index: './src/index.ts',
-    'arrow-caps': './src/arrow-caps.ts',
     copy: './src/copy.ts',
     'node-defaults': './src/node-defaults.ts',
     'hit-test': './src/hit-test.ts',

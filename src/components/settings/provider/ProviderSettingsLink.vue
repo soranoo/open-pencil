@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { openExternalLink } from '@/app/shell/ui'
-import AppButton from '@/components/ui/AppButton.vue'
+import AppTextButton from '@/components/ui/AppTextButton.vue'
 
 const { href } = defineProps<{ href: string }>()
 </script>
 
 <template>
-  <AppButton
-    color="primary"
-    variant="link"
-    size="xs"
-    class="self-start text-left"
+  <AppTextButton
+    size="sm"
+    underline
+    :ui="{ base: 'self-start text-left text-[11px]' }"
     @click="openExternalLink(href)"
   >
     <slot />
-  </AppButton>
+  </AppTextButton>
 </template>

@@ -39,11 +39,5 @@
   "distributeHorizontal": "Horizontalen Abstand verteilen",
   "distributeVertical": "Vertikalen Abstand verteilen",
   "selectInverse": "Auswahl umkehren",
-  "sendBackward": "Nach hinten",
-  "paletteSearchPlaceholder": "Befehl eingeben oder suchen…",
-  "paletteAriaLabel": "Befehlspalette",
-  "paletteSearchAriaLabel": "Befehle suchen",
-  "paletteDescription": "OpenPencil-Befehle suchen und ausführen.",
-  "paletteNoCommands": "Keine Befehle gefunden.",
-  "paletteBack": "Zurück"
+  "sendBackward": "Nach hinten"
 }

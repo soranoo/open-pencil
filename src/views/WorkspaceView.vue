@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, provide, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useUrlSearchParams } from '@vueuse/core'
 import { useHead } from '@unhead/vue'
 import { useRoute } from 'vue-router'
 
 import { exposeCollaborationActions } from '@/app/browser-bridge'
-import { appRuntimeConfig } from '@/app/runtime/config'
 import { startMCPRuntime, stopMCPRuntime } from '@/app/automation/mcp/runtime'
 import { COLLAB_KEY, useCollab } from '@/app/collab/use'
 import { createDemoShapes } from '@/app/demo/document'
@@ -21,10 +20,9 @@ import {
 } from '@/app/tabs'
 import { isTauri } from '@/app/tauri/env'
 import FontStatusBanner from '@/components/font-status/FontStatusBanner.vue'
-import CommandPalette from '@/components/commands/CommandPalette.vue'
+import RenameSelectionDialog from '@/components/selection/RenameSelectionDialog.vue'
 import SafariBanner from '@/components/SafariBanner.vue'
 import TabBar from '@/components/TabBar.vue'
-import RenameSelectionDialog from '@/components/selection/RenameSelectionDialog.vue'
 import EditorWorkspace from '@/components/editor/EditorWorkspace.vue'
 import HomeWorkspace from '@/components/home/HomeWorkspace.vue'
 import { connectRemoteControl } from '@/app/automation/remote-control'
@@ -34,16 +32,17 @@ import UnsavedChangesBanner from '@/components/UnsavedChangesBanner.vue'
 import ReadOnlyBanner from '@/components/ReadOnlyBanner.vue'
 
 const route = useRoute()
+const params = useUrlSearchParams('history')
 const createdInitialTab = tabCount() === 0
 const shouldCreateHome =
   route.path === '/' &&
-  !appRuntimeConfig.test &&
+  !('test' in params) &&
   !route.meta.demo &&
-  (isTauri() || appRuntimeConfig.recentFiles)
+  (isTauri() || 'recent-files' in params)
 let firstTab = activeTab.value
 if (!firstTab) firstTab = shouldCreateHome ? createHomeTab() : createTab()
 
-if (createdInitialTab && route.meta.demo && !appRuntimeConfig.test) {
+if (createdInitialTab && route.meta.demo && !('test' in params)) {
   void createDemoShapes(firstTab.store)
 }
 
@@ -128,13 +127,10 @@ onUnmounted(() => {
     </div>
     <template v-else>
       <SafariBanner />
-      <FontStatusBanner v-if="!IS_BACKEND_MODE" />
-      <RenameSelectionDialog />
-      <CommandPalette />
-      <TabBar />
       <UnsavedChangesBanner v-if="IS_BACKEND_MODE" />
       <ReadOnlyBanner v-if="IS_BACKEND_MODE" />
-
+      <FontStatusBanner v-if="!IS_BACKEND_MODE" />
+      <RenameSelectionDialog />
       <TabBar v-if="!IS_DISABLE_TAB" />
       <HomeWorkspace
         v-show="activeTab?.kind === 'home' && !IS_BACKEND_MODE"

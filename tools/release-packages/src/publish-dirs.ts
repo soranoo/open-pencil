@@ -62,31 +62,8 @@ async function copyRecursive(from: string, to: string): Promise<void> {
   await copyFile(from, to)
 }
 
-interface PackageExports {
-  [key: string]: PackageExports | string | undefined
-}
-
-interface PublishPackageJSON extends PackageJSON {
-  exports?: PackageExports
-  imports?: PackageExports
-}
-
-function isPackageExports(value: unknown): value is PackageExports {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function removeUnpublishedConditions(value: PackageExports | undefined): void {
-  if (!value) return
-  delete value.bun
-  for (const child of Object.values(value)) {
-    if (isPackageExports(child)) removeUnpublishedConditions(child)
-  }
-}
-
 export function publishPackageJSON(source: PackageJSON, coreVersion: string): PackageJSON {
-  const json = structuredClone(source) as PublishPackageJSON
-  removeUnpublishedConditions(json.exports)
-  removeUnpublishedConditions(json.imports)
+  const json = structuredClone(source)
 
   for (const field of PACKAGE_FIELDS) {
     const dependencies = json[field]

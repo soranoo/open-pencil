@@ -88,7 +88,7 @@ export function createTextCompositionHandlers({
     resetBlink()
   }
 
-  function onInput(event: InputEvent) {
+  function onInput() {
     const el = textareaRef.value
     if (!el) return
 
@@ -97,7 +97,7 @@ export function createTextCompositionHandlers({
       return
     }
 
-    const text = el.value || event.data || ''
+    const text = el.value
     if (!text) return
     if (
       skipCommittedInput &&

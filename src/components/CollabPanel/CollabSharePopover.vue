@@ -32,10 +32,10 @@ const styles = computed(() => collaboration({ connection: connection.value }))
         <icon-lucide-share-2 class="size-3.5" />
         {{
           collab.state.connected
-            ? collab.messages.connected
+            ? collab.dialogs.connected
             : collab.isJoining
-              ? collab.messages.joinRoom
-              : collab.messages.share
+              ? collab.dialogs.joinRoom
+              : collab.dialogs.share
         }}
       </button>
     </PopoverTrigger>

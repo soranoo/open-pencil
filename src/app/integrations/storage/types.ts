@@ -68,8 +68,7 @@ export interface StorageAdapter {
   listDocuments(): Promise<StorageDocument[]>
   getDocument(
     id: string,
-    onProgress?: (progress: StorageTransferProgress) => void,
-    signal?: AbortSignal
+    onProgress?: (progress: StorageTransferProgress) => void
   ): Promise<Uint8Array>
   putDocument(
     id: string,

@@ -15,35 +15,35 @@ interface ProviderConnectionTestButtonProps {
 
 const { status, reason, disabled = false } = defineProps<ProviderConnectionTestButtonProps>()
 const emit = defineEmits<{ test: [] }>()
-const { ai, common } = useI18n()
+const { dialogs } = useI18n()
 
 const resultMessage = computed(() => {
-  if (status === 'success') return ai.value.connectionTestSuccess
+  if (status === 'success') return dialogs.value.connectionTestSuccess
   if (status !== 'error') return null
 
   switch (reason) {
     case 'missing-api-key':
-      return ai.value.connectionTestMissingAPIKey
+      return dialogs.value.connectionTestMissingAPIKey
     case 'missing-base-url':
-      return ai.value.connectionTestMissingBaseURL
+      return dialogs.value.connectionTestMissingBaseURL
     case 'missing-model':
-      return ai.value.connectionTestMissingModel
+      return dialogs.value.connectionTestMissingModel
     case 'invalid-base-url':
-      return ai.value.connectionTestInvalidBaseURL
+      return dialogs.value.connectionTestInvalidBaseURL
     case 'auth':
-      return ai.value.connectionTestAuthFailed
+      return dialogs.value.connectionTestAuthFailed
     case 'insufficient-credit':
-      return ai.value.connectionTestInsufficientCredit
+      return dialogs.value.connectionTestInsufficientCredit
     case 'model-not-found':
-      return ai.value.connectionTestModelNotFound
+      return dialogs.value.connectionTestModelNotFound
     case 'api-type':
-      return ai.value.connectionTestAPITypeMismatch
+      return dialogs.value.connectionTestAPITypeMismatch
     case 'browser-network':
-      return ai.value.connectionTestBrowserNetworkFailed
+      return dialogs.value.connectionTestBrowserNetworkFailed
     case 'network':
-      return ai.value.connectionTestNetworkFailed
+      return dialogs.value.connectionTestNetworkFailed
     default:
-      return ai.value.connectionTestUnknownFailed
+      return dialogs.value.connectionTestUnknownFailed
   }
 })
 
@@ -64,7 +64,7 @@ const statusStyles = computed(() => tv(statusTheme)({ tone: resultTone.value }))
       <span class="inline-flex items-center justify-center gap-1.5">
         <icon-lucide-loader-2 v-if="isTesting" class="size-3 animate-spin" />
         <icon-lucide-plug-zap v-else class="size-3" />
-        {{ isTesting ? common.testingConnection : common.testConnection }}
+        {{ isTesting ? dialogs.testingConnection : dialogs.testConnection }}
       </span>
     </button>
 

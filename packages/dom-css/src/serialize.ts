@@ -80,11 +80,13 @@ function serializeAttrs(node: DesignElement, options: SerializeHTMLOptions): str
   const attrsWithoutStyle = { ...node.attrs }
   delete attrsWithoutStyle.style
   const sourceAttrs = options.style === 'tailwind' && tailwindClass ? attrsWithoutStyle : node.attrs
-  const attrs: Record<string, string | undefined> = { ...sourceAttrs }
-  if (tailwindClass) attrs.class = mergeClassNames(node.attrs.class, tailwindClass)
-  if (style && options.style !== 'tailwind') attrs.style = style
+  const attrs = {
+    ...sourceAttrs,
+    ...(tailwindClass ? { class: mergeClassNames(node.attrs.class, tailwindClass) } : {}),
+    ...(style && options.style !== 'tailwind' ? { style } : {})
+  }
   const serialized = Object.entries(attrs)
-    .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '')
+    .filter(([, value]) => value !== '')
     .map(([name, value]) => `${name}="${escapeAttr(value)}"`)
 
   if (serialized.length === 0) return ''

@@ -11,7 +11,7 @@ import type { ToastVariant } from '@/components/ui/toast'
 import { useI18n } from '@open-pencil/vue'
 
 const { copy, copied } = useClipboard({ copiedDuring: 1500 })
-const { common, settings } = useI18n()
+const { dialogs } = useI18n()
 const defaultToastClass = useToastUI({ tone: 'default' }).base
 const warningToastClass = useToastUI({ tone: 'warning' }).base
 const errorToastClass = useToastUI({ tone: 'error' }).base
@@ -44,7 +44,7 @@ function toastClass(tone: ToastVariant) {
       </ToastDescription>
       <Tip
         v-if="t.variant !== 'default'"
-        :label="copied ? common.copiedExclamation : common.copyMessage"
+        :label="copied ? dialogs.copiedExclamation : dialogs.copyMessage"
       >
         <button
           data-test-id="toast-copy-message"
@@ -65,7 +65,7 @@ function toastClass(tone: ToastVariant) {
     </ToastRoot>
 
     <ToastViewport
-      :label="`${settings.notifications} (F8)`"
+      :label="`${dialogs.notifications} (F8)`"
       class="fixed top-2 left-1/2 z-[9999] flex -translate-x-1/2 flex-col items-center gap-1.5"
     />
   </ToastProvider>

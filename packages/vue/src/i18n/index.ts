@@ -1,30 +1,13 @@
 export {
   useI18n,
   useI18nNamespace,
-  useAIMessages,
-  useAutomationMessages,
-  useCodeMessages,
-  useCollaborationMessages,
-  useCommandMessages,
-  useCommonMessages,
-  useCredentialMessages,
-  useDiagnosticsMessages,
-  useEditorMessages,
-  useFileMessages,
-  useFontMessages,
-  useMediaMessages,
   useMenuMessages,
-  usePageMessages,
-  usePanelMessages,
-  useRecoveryMessages,
-  useRenderingMessages,
-  useRenameMessages,
-  useSettingsMessages,
-  useStorageMessages,
+  useCommandMessages,
   useToolMessages,
-  useUpdateMessages,
-  useVariableMessages,
-  useVariableTypeMessages
+  usePanelMessages,
+  useVariableTypeMessages,
+  usePageMessages,
+  useDialogMessages
 } from '#vue/i18n/useI18n'
 export { i18n } from '#vue/i18n/create'
 export {
@@ -37,4 +20,13 @@ export {
   LOCALE_LABELS
 } from '#vue/i18n/locale'
 export type { Locale, TranslatedLocale } from '#vue/i18n/locale'
-export * from '#vue/i18n/messages'
+export {
+  menuMessages,
+  commandMessages,
+  toolMessages,
+  panelMessages,
+  variableTypeMessages,
+  pageMessages,
+  dialogMessages,
+  messageDefaults
+} from '#vue/i18n/messages'

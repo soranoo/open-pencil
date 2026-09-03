@@ -142,8 +142,7 @@ export async function s3Request(
         method: signed.method,
         headers: signed.headers,
         body: init.body ?? undefined,
-        credentials: 'omit',
-        signal: init.signal
+        credentials: 'omit'
       })
     }
   } catch (error) {
@@ -215,15 +214,16 @@ export async function putObject(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength
   ) as ArrayBuffer
-  const headers: Record<string, string> = { 'Content-Type': contentType }
-  if (options?.ifMatch) headers['If-Match'] = options.ifMatch
-  if (options?.ifNoneMatch) headers['If-None-Match'] = options.ifNoneMatch
   const res = await s3Request(
     config,
     objectURL(config, key),
     {
       method: 'PUT',
-      headers,
+      headers: {
+        'Content-Type': contentType,
+        ...(options?.ifMatch ? { 'If-Match': options.ifMatch } : {}),
+        ...(options?.ifNoneMatch ? { 'If-None-Match': options.ifNoneMatch } : {})
+      },
       body: payload
     },
     onUploadProgress
@@ -247,31 +247,29 @@ export async function getObjectValue(
 
 export type DownloadProgress = { receivedBytes: number; totalBytes: number | null }
 
-export async function readDownloadResponse(
-  res: Response,
-  onProgress?: (progress: DownloadProgress) => void,
-  signal?: AbortSignal
-): Promise<Uint8Array> {
-  signal?.throwIfAborted()
-  if (!onProgress || !res.body) return new Uint8Array(await res.arrayBuffer())
+export async function getObject(
+  config: S3CompatibleConfig,
+  key: string,
+  onProgress?: (progress: DownloadProgress) => void
+): Promise<Uint8Array | null> {
+  const res = await s3Request(config, objectURL(config, key), { method: 'GET' })
+  if (res.status === 404) return null
+  if (!onProgress || !res.body) {
+    return new Uint8Array(await res.arrayBuffer())
+  }
 
+  // Stream so large figs can report download progress
   const contentLength = Number(res.headers.get('content-length'))
   const totalBytes = Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null
   const reader = res.body.getReader()
   const chunks: Uint8Array[] = []
   let receivedBytes = 0
-  try {
-    for (;;) {
-      const { done, value } = await reader.read()
-      signal?.throwIfAborted()
-      if (done) break
-      chunks.push(value)
-      receivedBytes += value.byteLength
-      onProgress({ receivedBytes, totalBytes })
-    }
-  } catch (error) {
-    await reader.cancel().catch(() => undefined)
-    throw error
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    receivedBytes += value.byteLength
+    onProgress({ receivedBytes, totalBytes })
   }
   const out = new Uint8Array(receivedBytes)
   let offset = 0
@@ -280,18 +278,6 @@ export async function readDownloadResponse(
     offset += chunk.byteLength
   }
   return out
-}
-
-export async function getObject(
-  config: S3CompatibleConfig,
-  key: string,
-  onProgress?: (progress: DownloadProgress) => void,
-  signal?: AbortSignal
-): Promise<Uint8Array | null> {
-  signal?.throwIfAborted()
-  const res = await s3Request(config, objectURL(config, key), { method: 'GET', signal })
-  if (res.status === 404) return null
-  return readDownloadResponse(res, onProgress, signal)
 }
 
 export async function deleteObject(config: S3CompatibleConfig, key: string): Promise<void> {

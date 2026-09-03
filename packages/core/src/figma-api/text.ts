@@ -1,4 +1,3 @@
-import { recordInstanceOverride } from '@open-pencil/scene-graph'
 import type { SceneGraph, SceneNode } from '@open-pencil/scene-graph'
 
 import { styleNameToWeight, weightToStyleName, type FigmaFontName } from './fonts'
@@ -14,7 +13,6 @@ export function setFontName(graph: SceneGraph, nodeId: string, fontName: FigmaFo
     fontWeight: weight,
     italic
   })
-  recordInstanceOverride(graph, nodeId, ['fontFamily', 'fontWeight'])
 }
 
 export function insertCharacters(
@@ -25,7 +23,6 @@ export function insertCharacters(
 ): void {
   const text = node.text.slice(0, start) + characters + node.text.slice(start)
   graph.updateNode(node.id, { text })
-  recordInstanceOverride(graph, node.id, ['text'])
 }
 
 export function deleteCharacters(
@@ -36,5 +33,4 @@ export function deleteCharacters(
 ): void {
   const text = node.text.slice(0, start) + node.text.slice(end)
   graph.updateNode(node.id, { text })
-  recordInstanceOverride(graph, node.id, ['text'])
 }

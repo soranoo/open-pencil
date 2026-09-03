@@ -41,13 +41,7 @@ export const commandMessageDefaults = {
   setOpacity: 'Set opacity',
   zoomTo100: 'Zoom to 100%',
   zoomToFit: 'Zoom to fit',
-  zoomToSelection: 'Zoom to selection',
-  paletteSearchPlaceholder: 'Type a command or search…',
-  paletteAriaLabel: 'Command palette',
-  paletteSearchAriaLabel: 'Search commands',
-  paletteDescription: 'Search and run OpenPencil commands.',
-  paletteNoCommands: 'No commands found.',
-  paletteBack: 'Back'
+  zoomToSelection: 'Zoom to selection'
 } as const
 
 export const commandMessages = i18n('commands', commandMessageDefaults)

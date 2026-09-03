@@ -5,7 +5,6 @@ import type { CanvasRenderLayer } from './types'
 type RenderLoopOptions = {
   layer?: CanvasRenderLayer
   getRenderState?: () => EditorState
-  shouldSuspendRender?: () => boolean
 }
 
 type EditorRenderScheduler = {
@@ -68,7 +67,7 @@ export function createCanvasRenderLoop(
   function renderFrame() {
     frameScheduled = false
     const state = getRenderState()
-    if (options.shouldSuspendRender?.() === true) {
+    if (state.loading) {
       dirty = true
       scheduleFrame()
       return

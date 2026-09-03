@@ -22,7 +22,6 @@ import type {
   StyleRun
 } from './'
 import { geometryCommandCoordCount } from './geometry'
-import { cloneInstanceOverrideState } from './instance-overrides'
 import { createDefaultSourceMetadata } from './node-defaults'
 import { cloneVectorNetwork } from './vector-network'
 
@@ -241,9 +240,8 @@ export function cloneNodeProps(
       source: createDefaultSourceMetadata(),
       boundVariables: { ...src.boundVariables },
       variableModes: { ...src.variableModes },
-      instanceOverrides: cloneInstanceOverrideState(src.instanceOverrides),
+      overrides: Object.keys(src.overrides).length > 0 ? structuredClone(src.overrides) : {},
       componentPropertyAssignments: { ...src.componentPropertyAssignments },
-
       componentPropertyValues: { ...src.componentPropertyValues }
     }
   }
@@ -252,9 +250,8 @@ export function cloneNodeProps(
     ...(componentId !== null ? { componentId } : {}),
     boundVariables: { ...src.boundVariables },
     variableModes: { ...src.variableModes },
-    instanceOverrides: cloneInstanceOverrideState(src.instanceOverrides),
+    overrides: Object.keys(src.overrides).length > 0 ? structuredClone(src.overrides) : {},
     fills: copyOpt(src.fills, (value) => markCopySource(value, copyFills(value))),
-
     strokes: copyOpt(src.strokes, (value) => markCopySource(value, copyStrokes(value))),
     effects: copyOpt(src.effects, (value) => markCopySource(value, copyEffects(value))),
     layoutGrids: copyOpt(src.layoutGrids, copyLayoutGrids),

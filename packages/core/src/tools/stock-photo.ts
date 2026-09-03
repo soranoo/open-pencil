@@ -19,9 +19,8 @@ export const stockPhoto = defineTool({
   name: 'stock_photo',
   mutates: true,
   description:
-    'Search stock photos and apply to leaf image placeholders or closed area geometry. ' +
-    'Pass a JSON array; each item is {id, query, index?, orientation?}. ' +
-    'Containers with content, text, lines, and structural nodes are rejected.',
+    'Search stock photos and apply to nodes. Pass a JSON array — all fetched in parallel. ' +
+    'Each item: {id, query, index?, orientation?}. Only works on leaf shapes (Rectangle/Ellipse).',
   params: {
     requests: {
       type: 'string',

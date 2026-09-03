@@ -5,7 +5,7 @@ import { useI18n } from '@open-pencil/vue'
 import { useAIChat } from '@/app/ai/chat/use'
 import ProviderSettingsKeyField from '@/components/settings/provider/ProviderSettingsKeyField.vue'
 
-const { media, credentials } = useI18n()
+const { dialogs } = useI18n()
 const { pexelsKeyStatus, setPexelsKey, unsplashKeyStatus, setUnsplashKey } = useAIChat()
 const pexelsKeyInput = ref('')
 const unsplashKeyInput = ref('')
@@ -40,26 +40,26 @@ async function clearUnsplashKey(): Promise<void> {
 <template>
   <ProviderSettingsKeyField
     v-model="pexelsKeyInput"
-    :label="media.pexelsAPIKey"
+    :label="dialogs.pexelsAPIKey"
     :saved="hasExistingPexelsKey"
     kind="pexels"
-    :placeholder="hasExistingPexelsKey ? credentials.savedReplace : media.stockPhotoToolOptional"
+    :placeholder="hasExistingPexelsKey ? dialogs.keySavedReplace : dialogs.stockPhotoToolOptional"
     key-u-r-l="https://www.pexels.com/api/"
-    :key-u-r-l-label="media.getPexelsAPIKey"
+    :key-u-r-l-label="dialogs.getPexelsAPIKey"
     @clear="clearPexelsKey"
     @change="savePexelsKey"
   />
 
   <ProviderSettingsKeyField
     v-model="unsplashKeyInput"
-    :label="media.unsplashAccessKey"
+    :label="dialogs.unsplashAccessKey"
     :saved="hasExistingUnsplashKey"
     kind="unsplash"
     :placeholder="
-      hasExistingUnsplashKey ? credentials.savedReplace : media.pexelsAlternativeOptional
+      hasExistingUnsplashKey ? dialogs.keySavedReplace : dialogs.pexelsAlternativeOptional
     "
     key-u-r-l="https://unsplash.com/oauth/applications"
-    :key-u-r-l-label="media.getUnsplashAccessKey"
+    :key-u-r-l-label="dialogs.getUnsplashAccessKey"
     @clear="clearUnsplashKey"
     @change="saveUnsplashKey"
   />

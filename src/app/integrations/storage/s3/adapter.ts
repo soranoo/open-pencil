@@ -172,10 +172,8 @@ export function createS3StorageAdapter(runtime: StorageProviderRuntime): S3Stora
       return documents.sort((first, second) => second.updatedAt.localeCompare(first.updatedAt))
     },
 
-    async getDocument(id, onProgress, signal) {
-      signal?.throwIfAborted()
+    async getDocument(id, onProgress) {
       const config = await resolveConfig(runtime)
-      signal?.throwIfAborted()
       const bytes = await getObject(
         config,
         documentFigKey(id),
@@ -185,8 +183,7 @@ export function createS3StorageAdapter(runtime: StorageProviderRuntime): S3Stora
                 transferredBytes: progress.receivedBytes,
                 totalBytes: progress.totalBytes
               })
-          : undefined,
-        signal
+          : undefined
       )
       if (!bytes) throw new Error(`Document not found: ${id}`)
       return bytes

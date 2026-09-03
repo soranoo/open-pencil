@@ -140,9 +140,10 @@ export function createStdioRPCBridge({
   ): Promise<{ status: number; data: unknown; req: ClientRequest }> {
     return new Promise((resolve, reject) => {
       const bodyJSON = body ? JSON.stringify(body) : undefined
-      const headers: Record<string, string> = {}
-      if (bodyJSON) headers['Content-Type'] = 'application/json'
-      if (resolvedAuthToken) headers.Authorization = `Bearer ${resolvedAuthToken}`
+      const headers: Record<string, string> = {
+        ...(bodyJSON ? { 'Content-Type': 'application/json' } : {}),
+        ...(resolvedAuthToken ? { Authorization: `Bearer ${resolvedAuthToken}` } : {})
+      }
 
       let reqOpts: RequestOptions | null = null
       if (transportMode === 'socket' && resolvedSocketPath) {

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test'
 
 import type { SceneGraph, SceneNode } from '@open-pencil/scene-graph'
 
-import { browserHTMLToSceneGraph } from '../src/browser'
 import type { DesignElement, DesignNode } from '../src/index'
 import {
   createHeadlessCSSRuntime,
@@ -158,15 +157,6 @@ function expectStyleRoundTripHTML(graph: SceneGraph) {
 }
 
 describe('@open-pencil/dom-css conversion', () => {
-  it('rejects pre-aborted browser conversion before runtime work', async () => {
-    const abort = new AbortController()
-    abort.abort()
-
-    await expect(
-      browserHTMLToSceneGraph('<main>Cancelled</main>', { signal: abort.signal })
-    ).rejects.toHaveProperty('name', 'AbortError')
-  })
-
   it('converts HTML and CSS to DesignDOM with one API call', async () => {
     const document = await htmlToDesignDocument(cardHTML, {
       cssText: cardCSS,

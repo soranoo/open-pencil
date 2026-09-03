@@ -7,7 +7,6 @@ import documents from './commands/documents'
 import evalCmd from './commands/eval'
 import exportCmd from './commands/export'
 import find from './commands/find'
-import fonts from './commands/fonts'
 import formats from './commands/formats'
 import importCmd from './commands/import'
 import info from './commands/info'
@@ -37,7 +36,6 @@ const main = defineCommand({
     import: importCmd,
     find,
     formats,
-    fonts,
     info,
     lint,
     libraries,

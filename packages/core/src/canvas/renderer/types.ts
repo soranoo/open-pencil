@@ -63,7 +63,8 @@ export interface RenderOverlays {
     }>
     regions: VectorRegion[]
     selectedVertexIndices: Set<number>
-    selectedHandles?: Set<number>
+    /** Set of selected handles as "segIdx:tangentField" strings */
+    selectedHandles?: Set<string>
     hoveredHandleInfo?: { segmentIndex: number; tangentField: 'tangentStart' | 'tangentEnd' } | null
   } | null
   remoteCursors?: Array<{

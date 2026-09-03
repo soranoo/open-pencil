@@ -11,7 +11,6 @@ import type {
 export interface StyleOverride {
   styleID: number
   handleMirroring?: string
-  strokeCap?: string
   fillPaints?: Paint[]
 }
 
@@ -40,14 +39,12 @@ export function decodeVectorNetworkBlob(
     offset += 4
     const y = view.getFloat32(offset, true)
     offset += 4
-    const style = styles.get(styleIndex)
-    const vertex: VectorVertex = {
+    vertices.push({
       x,
       y,
-      handleMirroring: (style?.handleMirroring as HandleMirroring | undefined) ?? 'NONE'
-    }
-    if (style?.strokeCap) vertex.strokeCap = style.strokeCap
-    vertices.push(vertex)
+      handleMirroring:
+        (styles.get(styleIndex)?.handleMirroring as HandleMirroring | undefined) ?? 'NONE'
+    })
   }
 
   const segments: VectorSegment[] = []
@@ -96,35 +93,26 @@ export function decodeVectorNetworkBlob(
   return { vertices, segments, regions }
 }
 
-function vertexStyleKey(vertex: VectorVertex): string {
-  return `${vertex.handleMirroring ?? 'NONE'}|${vertex.strokeCap ?? ''}`
-}
-
 export function buildStyleOverrideTable(network: VectorNetwork): {
   table: StyleOverride[]
-  styleToId: Map<string, number>
+  mirroringToId: Map<string, number>
 } {
-  const styleToId = new Map<string, number>()
+  const mirroringToId = new Map<string, number>()
   const table: StyleOverride[] = []
   let nextId = 1
   for (const vertex of network.vertices) {
     const mirroring = vertex.handleMirroring ?? 'NONE'
-    if (mirroring === 'NONE' && !vertex.strokeCap) continue
-    const key = vertexStyleKey(vertex)
-    if (styleToId.has(key)) continue
-    styleToId.set(key, nextId)
-    const entry: StyleOverride = { styleID: nextId }
-    if (mirroring !== 'NONE') entry.handleMirroring = mirroring
-    if (vertex.strokeCap) entry.strokeCap = vertex.strokeCap
-    table.push(entry)
+    if (mirroring === 'NONE' || mirroringToId.has(mirroring)) continue
+    mirroringToId.set(mirroring, nextId)
+    table.push({ styleID: nextId, handleMirroring: mirroring })
     nextId++
   }
-  return { table, styleToId }
+  return { table, mirroringToId }
 }
 
 export function encodeVectorNetworkBlob(
   network: VectorNetwork,
-  styleToId?: Map<string, number>
+  mirroringToId?: Map<string, number>
 ): Uint8Array {
   let regionBytes = 0
   for (const region of network.regions) {
@@ -145,7 +133,8 @@ export function encodeVectorNetworkBlob(
   offset += 4
 
   for (const vertex of network.vertices) {
-    view.setUint32(offset, styleToId?.get(vertexStyleKey(vertex)) ?? 0, true)
+    const mirroring = vertex.handleMirroring ?? 'NONE'
+    view.setUint32(offset, mirroring === 'NONE' ? 0 : (mirroringToId?.get(mirroring) ?? 0), true)
     offset += 4
     view.setFloat32(offset, vertex.x, true)
     offset += 4

@@ -1,4 +1,4 @@
-import type { DBSchema, IDBPDatabase } from 'idb'
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 
 import { credentialKey, validateCredentialValue } from '@/app/settings/credentials/reference'
 import type {
@@ -8,23 +8,9 @@ import type {
   CredentialStoreAvailability
 } from '@/app/settings/credentials/types'
 import { CredentialStoreError } from '@/app/settings/credentials/types'
-import { APP_DATABASE_NAMES, defineAppDatabase, openAppDatabase } from '@/app/storage/idb'
 
-const credentialDatabase = defineAppDatabase<CredentialDatabase>({
-  name: APP_DATABASE_NAMES.credentials,
-  version: 1,
-  callbacks: {
-    upgrade(database) {
-      if (!database.objectStoreNames.contains('credentials')) {
-        database.createObjectStore('credentials')
-      }
-      if (!database.objectStoreNames.contains('metadata')) {
-        database.createObjectStore('metadata')
-      }
-    }
-  }
-})
-
+const DATABASE_NAME = 'open-pencil-credentials'
+const DATABASE_VERSION = 1
 const MASTER_KEY_ID = 'master-key'
 const IV_LENGTH = 12
 
@@ -56,7 +42,16 @@ export class BrowserCredentialStore implements CredentialStore {
   #masterKeyPromise?: Promise<CryptoKey>
 
   constructor() {
-    this.#database = openAppDatabase(credentialDatabase)
+    this.#database = openDB<CredentialDatabase>(DATABASE_NAME, DATABASE_VERSION, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains('credentials')) {
+          database.createObjectStore('credentials')
+        }
+        if (!database.objectStoreNames.contains('metadata')) {
+          database.createObjectStore('metadata')
+        }
+      }
+    })
   }
 
   async availability(): Promise<CredentialStoreAvailability> {
